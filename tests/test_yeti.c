@@ -270,6 +270,61 @@ static void test_game_init_starting_state(void) {
     ASSERT(g.scroll_period == SCROLL_PERIOD_START);
 }
 
+static void test_player_move_left(void) {
+    struct game g;
+    game_init(&g, 1);
+    int before = g.player_col;
+    player_step(&g, KEY_LEFT);
+    ASSERT(g.player_col == before - 1);
+}
+
+static void test_player_move_right(void) {
+    struct game g;
+    game_init(&g, 1);
+    int before = g.player_col;
+    player_step(&g, KEY_RIGHT);
+    ASSERT(g.player_col == before + 1);
+}
+
+static void test_player_clamps_at_left(void) {
+    struct game g;
+    game_init(&g, 1);
+    g.player_col = 0;
+    player_step(&g, KEY_LEFT);
+    ASSERT(g.player_col == 0);
+}
+
+static void test_player_clamps_at_right(void) {
+    struct game g;
+    game_init(&g, 1);
+    g.player_col = PLAYFIELD_W - 2;
+    player_step(&g, KEY_RIGHT);
+    ASSERT(g.player_col == PLAYFIELD_W - 2);
+}
+
+static void test_player_collision_left_cell(void) {
+    struct game g;
+    game_init(&g, 1);
+    world_set(&g, PLAYER_ROW, g.player_col, 'T');
+    player_check_collision(&g);
+    ASSERT(g.alive == 0);
+}
+
+static void test_player_collision_right_cell(void) {
+    struct game g;
+    game_init(&g, 1);
+    world_set(&g, PLAYER_ROW, g.player_col + 1, 'T');
+    player_check_collision(&g);
+    ASSERT(g.alive == 0);
+}
+
+static void test_player_no_collision_when_clear(void) {
+    struct game g;
+    game_init(&g, 1);
+    player_check_collision(&g);
+    ASSERT(g.alive == 1);
+}
+
 int main(void) {
     test_smoke();
     test_xorshift32_deterministic();
@@ -296,6 +351,13 @@ int main(void) {
     test_game_init_with_seed_is_deterministic();
     test_game_init_reveal_tick_in_range();
     test_game_init_starting_state();
+    test_player_move_left();
+    test_player_move_right();
+    test_player_clamps_at_left();
+    test_player_clamps_at_right();
+    test_player_collision_left_cell();
+    test_player_collision_right_cell();
+    test_player_no_collision_when_clear();
     fprintf(stderr, "\n%d/%d tests passed\n",
             test_count - fail_count, test_count);
     return fail_count ? 1 : 0;
