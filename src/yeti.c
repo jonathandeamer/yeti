@@ -21,7 +21,19 @@
 /* (filled in Task 6) */
 
 /* --- prng --- */
-/* (filled in Task 5) */
+LOCAL unsigned int xorshift32(unsigned int *s) {
+    unsigned int x = *s;
+    x ^= x << 13;
+    x ^= x >> 17;
+    x ^= x << 5;
+    *s = x;
+    return x;
+}
+
+LOCAL unsigned int xorshift_uniform(unsigned int *s, unsigned int n) {
+    /* Slight modulo bias acceptable for game variance use. */
+    return xorshift32(s) % n;
+}
 
 /* --- world --- */
 /* (filled in Tasks 8-11) */
