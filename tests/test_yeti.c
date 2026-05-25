@@ -86,6 +86,48 @@ static void test_ms_until_past_returns_nonpositive(void) {
     ASSERT(ms <= 0);
 }
 
+static void test_world_clear_zeros_buffer(void) {
+    struct game g;
+    g.world_top = 0;
+    memset(g.world, 'X', sizeof(g.world));
+    world_clear(&g);
+    for (int r = 0; r < BUF_H; r++) {
+        for (int c = 0; c < PLAYFIELD_W; c++) {
+            ASSERT(g.world[r][c] == 0);
+        }
+    }
+}
+
+static void test_world_get_set_roundtrip(void) {
+    struct game g;
+    g.world_top = 0;
+    world_clear(&g);
+    world_set(&g, 3, 17, 'T');
+    ASSERT(world_get(&g, 3, 17) == 'T');
+    ASSERT(world_get(&g, 3, 18) == 0);
+    ASSERT(world_get(&g, 4, 17) == 0);
+}
+
+static void test_world_get_set_honors_ring_top(void) {
+    struct game g;
+    g.world_top = 5;
+    world_clear(&g);
+    world_set(&g, 0, 10, 'T');
+    /* row 0 from caller's view is ring index (5 + 0) % BUF_H = 5 */
+    ASSERT(g.world[5][10] == 'T');
+    ASSERT(world_get(&g, 0, 10) == 'T');
+}
+
+static void test_world_get_set_wraps_ring(void) {
+    struct game g;
+    g.world_top = BUF_H - 2;
+    world_clear(&g);
+    world_set(&g, 5, 20, 'T');
+    /* (BUF_H - 2 + 5) mod BUF_H = 3 */
+    ASSERT(g.world[3][20] == 'T');
+    ASSERT(world_get(&g, 5, 20) == 'T');
+}
+
 int main(void) {
     test_smoke();
     test_xorshift32_deterministic();
@@ -96,6 +138,10 @@ int main(void) {
     test_add_ms_wrap();
     test_ms_until_positive();
     test_ms_until_past_returns_nonpositive();
+    test_world_clear_zeros_buffer();
+    test_world_get_set_roundtrip();
+    test_world_get_set_honors_ring_top();
+    test_world_get_set_wraps_ring();
     fprintf(stderr, "\n%d/%d tests passed\n",
             test_count - fail_count, test_count);
     return fail_count ? 1 : 0;

@@ -4,6 +4,7 @@
 /* --- includes --- */
 #include <stdio.h>
 #include <stdint.h>
+#include <string.h>
 #include <time.h>
 
 /* --- test visibility --- */
@@ -86,7 +87,19 @@ LOCAL unsigned int xorshift_uniform(unsigned int *s, unsigned int n) {
 }
 
 /* --- world --- */
-/* (filled in Tasks 8-11) */
+LOCAL void world_clear(struct game *g) {
+    memset(g->world, 0, sizeof(g->world));
+}
+
+LOCAL char world_get(const struct game *g, int row, int col) {
+    int idx = (g->world_top + row) % BUF_H;
+    return g->world[idx][col];
+}
+
+LOCAL void world_set(struct game *g, int row, int col, char v) {
+    int idx = (g->world_top + row) % BUF_H;
+    g->world[idx][col] = v;
+}
 
 /* --- player --- */
 /* (filled in Task 13) */
