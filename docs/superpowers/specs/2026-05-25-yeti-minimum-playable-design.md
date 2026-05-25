@@ -54,7 +54,7 @@ struct game {
     int yeti_col;                /* 0..PLAYFIELD_W - 1 */
     int scroll_period;           /* ticks per row of world scroll; ramps down */
     int ticks_since_scroll;      /* mod scroll_period */
-    char world[BUF_H][PLAYFIELD_W]; /* ring buffer of rows; cells are 0 or 'Y' */
+    char world[BUF_H][PLAYFIELD_W]; /* ring buffer of rows; cells are 0 or 'T' */
     int world_top;               /* index of topmost row in the ring */
 };
 ```
@@ -133,7 +133,7 @@ Because the transition row is empty, chunks compose freely without a runtime rea
 
 Within a tier, uniform-random pick via xorshift32.
 
-**World ring buffer**: `BUF_H = 32`. New chunks are unpacked from the bit-packed `chunk_pool` into the ring buffer at generation time (`'Y'` for set bits, `0` for clear). World scroll advances `world_top` upward modulo `BUF_H`. The ring is byte-per-cell for direct indexing in `world_get()` and the draw loop; bit-packing the runtime buffer would save ~1.7 KB of stack and cost more bytes in code than it returns.
+**World ring buffer**: `BUF_H = 32`. New chunks are unpacked from the bit-packed `chunk_pool` into the ring buffer at generation time (`'T'` for set bits, `0` for clear). World scroll advances `world_top` upward modulo `BUF_H`. The ring is byte-per-cell for direct indexing in `world_get()` and the draw loop; bit-packing the runtime buffer would save ~1.7 KB of stack and cost more bytes in code than it returns.
 
 ## Player input and movement
 
@@ -196,7 +196,7 @@ Once per `step()`, after world scroll and yeti chase update:
 ```c
 char left  = world_get(&g, PLAYER_ROW, g.player_col);
 char right = world_get(&g, PLAYER_ROW, g.player_col + 1);
-if (left == 'Y' || right == 'Y') g.alive = 0;
+if (left == 'T' || right == 'T') g.alive = 0;
 ```
 
 Yeti collision is checked inside the chase block. Same outcome for both: `alive = 0`, drop into the death screen.
@@ -214,7 +214,7 @@ Yeti collision is checked inside the chase block. Same outcome for both: `alive 
 
 | Glyph | Color pair | Meaning |
 |---|---|---|
-| `Y` | green | tree |
+| `T` | green | tree |
 | `Y` | red bold | yeti (only when armed) |
 | `\|\|` (2 cells) | white bright | player skier |
 | space | — | empty playfield |
