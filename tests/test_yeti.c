@@ -178,6 +178,45 @@ static void test_chunk_unused_bits_are_zero(void) {
     }
 }
 
+static void test_chunk_pick_returns_tier0_when_distance_zero(void) {
+    unsigned int s = 1;
+    for (int i = 0; i < 50; i++) {
+        int pick = chunk_pick(&s, 0);
+        ASSERT(chunk_tier[pick] == 0);
+    }
+}
+
+static void test_chunk_pick_returns_tier_1_or_2_when_distance_high(void) {
+    unsigned int s = 1;
+    int seen0 = 0, seen1 = 0, seen2 = 0;
+    for (int i = 0; i < 200; i++) {
+        int pick = chunk_pick(&s, 300);
+        if (chunk_tier[pick] == 0) seen0 = 1;
+        if (chunk_tier[pick] == 1) seen1 = 1;
+        if (chunk_tier[pick] == 2) seen2 = 1;
+    }
+    ASSERT(seen0 == 0);
+    ASSERT(seen1 == 1);
+    ASSERT(seen2 == 1);
+}
+
+static void test_chunk_unpack_to_world(void) {
+    struct game g;
+    g.world_top = 0;
+    world_clear(&g);
+    chunk_unpack(&g, /*dest_row=*/0, /*chunk_idx=*/0);
+    /* chunk 0: trees at (0,27), (1,12), (1,45), (2,40), row 3 empty */
+    ASSERT(world_get(&g, 0, 27) == 'T');
+    ASSERT(world_get(&g, 0, 26) == 0);
+    ASSERT(world_get(&g, 0, 28) == 0);
+    ASSERT(world_get(&g, 1, 12) == 'T');
+    ASSERT(world_get(&g, 1, 45) == 'T');
+    ASSERT(world_get(&g, 2, 40) == 'T');
+    for (int c = 0; c < PLAYFIELD_W; c++) {
+        ASSERT(world_get(&g, 3, c) == 0);
+    }
+}
+
 int main(void) {
     test_smoke();
     test_xorshift32_deterministic();
@@ -196,6 +235,9 @@ int main(void) {
     test_chunk_last_row_always_empty();
     test_chunk_no_three_consecutive_trees();
     test_chunk_unused_bits_are_zero();
+    test_chunk_pick_returns_tier0_when_distance_zero();
+    test_chunk_pick_returns_tier_1_or_2_when_distance_high();
+    test_chunk_unpack_to_world();
     fprintf(stderr, "\n%d/%d tests passed\n",
             test_count - fail_count, test_count);
     return fail_count ? 1 : 0;
