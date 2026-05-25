@@ -33,6 +33,6 @@ test: tests/test_yeti
 	@./tests/test_yeti
 
 tests/test_yeti: tests/test_yeti.c src/yeti.c
-	$(CC) $(CFLAGS) -DGAME_TEST -o $@ tests/test_yeti.c $(LDFLAGS) $(LIBS)
+	$(CC) $(CFLAGS) -Wno-missing-prototypes -DGAME_TEST -o $@ tests/test_yeti.c $(LDFLAGS) $(LIBS)
 
 .PHONY: all clean install uninstall size test
