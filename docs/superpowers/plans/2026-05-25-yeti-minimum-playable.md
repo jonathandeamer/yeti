@@ -134,6 +134,7 @@ Expected: hook passes, commit created.
 
 ```c
 /* SPDX-License-Identifier: MIT OR CC0-1.0 */
+#define _POSIX_C_SOURCE 200809L
 
 /* --- includes --- */
 #include <stdio.h>
@@ -149,6 +150,8 @@ int main(int argc, char **argv) {
     return 0;
 }
 ```
+
+`_POSIX_C_SOURCE` must be defined *before* any `#include` so glibc and friends expose `clock_gettime`, `sigaction`, `setenv`, `getpid`, and `struct timespec` under `-std=c99`. macOS is permissive without it, Linux is not.
 
 - [ ] **Step 2: Create `Makefile`**
 
@@ -169,16 +172,25 @@ BIN = yeti
 all: $(BIN)
 
 $(BIN): $(SRC)
-	$(CC) $(CFLAGS) -o $@ $< $(LIBS) $(LDFLAGS)
+	$(CC) $(CFLAGS) -o $@ $< $(LDFLAGS) $(LIBS)
 
 clean:
 	rm -f $(BIN) tests/test_yeti
 
+install: $(BIN)
+	install -d $(DESTDIR)$(PREFIX)/bin
+	install -m 755 $(BIN) $(DESTDIR)$(PREFIX)/bin/$(BIN)
+
+uninstall:
+	rm -f $(DESTDIR)$(PREFIX)/bin/$(BIN)
+
 size:
 	@wc -c $(SRC)
 
-.PHONY: all clean size
+.PHONY: all clean install uninstall size
 ```
+
+`$(LDFLAGS)` comes *before* `$(LIBS)` so user-supplied `LDFLAGS=-L/custom/path` lands before `-lncurses` on the link line — linkers consume args left-to-right and need `-L` paths registered before the `-l` references that use them.
 
 - [ ] **Step 3: Build and run**
 
@@ -272,6 +284,7 @@ git commit -m "docs(docs): add README"
 
 ```c
 /* SPDX-License-Identifier: MIT OR CC0-1.0 */
+#define _POSIX_C_SOURCE 200809L
 
 /* --- includes --- */
 #include <stdio.h>
@@ -284,7 +297,34 @@ git commit -m "docs(docs): add README"
 #endif
 
 /* --- constants --- */
-/* (none yet) */
+/* (filled in Task 7) */
+
+/* --- state --- */
+/* (filled in Task 7) */
+
+/* --- time --- */
+/* (filled in Task 6) */
+
+/* --- prng --- */
+/* (filled in Task 5) */
+
+/* --- world --- */
+/* (filled in Tasks 8-11) */
+
+/* --- player --- */
+/* (filled in Task 13) */
+
+/* --- yeti --- */
+/* (filled in Task 14) */
+
+/* --- term --- */
+/* (filled in Task 16) */
+
+/* --- step / draw --- */
+/* (filled in Tasks 12, 15, 17, 18, 19) */
+
+/* --- cli --- */
+/* (filled in Task 20) */
 
 /* --- main --- */
 #ifndef GAME_TEST
@@ -296,6 +336,8 @@ int main(int argc, char **argv) {
 }
 #endif
 ```
+
+Sections are pre-created in dependency order: each section can call only into sections above it. The `/* --- step / draw --- */` orchestrator section sits below all the leaf systems (world, player, yeti, term) because it composes them; `/* --- term --- */` sits above it because the orchestrator's main loop reads the signal flags declared there.
 
 - [ ] **Step 2: Create `tests/test_yeti.c` with a sanity test**
 
@@ -344,13 +386,13 @@ test: tests/test_yeti
 	@./tests/test_yeti
 
 tests/test_yeti: tests/test_yeti.c src/yeti.c
-	$(CC) $(CFLAGS) -DGAME_TEST -o $@ tests/test_yeti.c $(LIBS) $(LDFLAGS)
+	$(CC) $(CFLAGS) -DGAME_TEST -o $@ tests/test_yeti.c $(LDFLAGS) $(LIBS)
 ```
 
 Update the `.PHONY` line to:
 
 ```make
-.PHONY: all clean size test
+.PHONY: all clean install uninstall size test
 ```
 
 - [ ] **Step 4: Run tests**
@@ -434,7 +476,7 @@ Expected: compilation failure with `error: implicit declaration of function 'xor
 
 - [ ] **Step 3: Implement PRNG in `src/yeti.c`**
 
-Add a new section before `/* --- main --- */`:
+Fill the `/* --- prng --- */` section, replacing its placeholder comment:
 
 ```c
 /* --- prng --- */
@@ -544,7 +586,7 @@ In `src/yeti.c`, add `<time.h>` to includes:
 #include <time.h>
 ```
 
-Add a new section before `/* --- prng --- */`:
+Fill the `/* --- time --- */` section, replacing its placeholder comment:
 
 ```c
 /* --- time --- */
@@ -590,13 +632,13 @@ git commit -m "feat(game): add timing helpers add_ms and ms_until"
 
 - [ ] **Step 1: Add the constants block and state struct**
 
-Update `src/yeti.c`. After the `/* --- includes --- */` section, add `<stdint.h>` to includes:
+Update `src/yeti.c`. Add `<stdint.h>` to includes:
 
 ```c
 #include <stdint.h>
 ```
 
-Replace the empty `/* --- constants --- */` block with:
+Fill the `/* --- constants --- */` section, replacing its placeholder comment:
 
 ```c
 /* --- constants --- */
@@ -620,7 +662,11 @@ Replace the empty `/* --- constants --- */` block with:
 #define PAIR_PLAYER  2
 #define PAIR_YETI    3
 #define PAIR_HUD     4
+```
 
+Then fill the `/* --- state --- */` section, replacing its placeholder comment:
+
+```c
 /* --- state --- */
 struct game {
     unsigned int rng;
@@ -691,8 +737,8 @@ static void test_world_get_set_roundtrip(void) {
     struct game g;
     g.world_top = 0;
     world_clear(&g);
-    world_set(&g, 3, 17, 'Y');
-    ASSERT(world_get(&g, 3, 17) == 'Y');
+    world_set(&g, 3, 17, 'T');
+    ASSERT(world_get(&g, 3, 17) == 'T');
     ASSERT(world_get(&g, 3, 18) == 0);
     ASSERT(world_get(&g, 4, 17) == 0);
 }
@@ -701,20 +747,20 @@ static void test_world_get_set_honors_ring_top(void) {
     struct game g;
     g.world_top = 5;
     world_clear(&g);
-    world_set(&g, 0, 10, 'Y');
+    world_set(&g, 0, 10, 'T');
     /* row 0 from caller's view is ring index (5 + 0) % BUF_H = 5 */
-    ASSERT(g.world[5][10] == 'Y');
-    ASSERT(world_get(&g, 0, 10) == 'Y');
+    ASSERT(g.world[5][10] == 'T');
+    ASSERT(world_get(&g, 0, 10) == 'T');
 }
 
 static void test_world_get_set_wraps_ring(void) {
     struct game g;
     g.world_top = BUF_H - 2;
     world_clear(&g);
-    world_set(&g, 5, 20, 'Y');
+    world_set(&g, 5, 20, 'T');
     /* (BUF_H - 2 + 5) mod BUF_H = 3 */
-    ASSERT(g.world[3][20] == 'Y');
-    ASSERT(world_get(&g, 5, 20) == 'Y');
+    ASSERT(g.world[3][20] == 'T');
+    ASSERT(world_get(&g, 5, 20) == 'T');
 }
 ```
 
@@ -737,7 +783,7 @@ Expected: compile error referencing `world_clear`, `world_get`, `world_set`.
 
 - [ ] **Step 3: Implement world ring**
 
-Add `<string.h>` to includes. Add a new section before `/* --- main --- */`:
+Add `<string.h>` to includes. Fill the `/* --- world --- */` section, replacing its placeholder comment:
 
 ```c
 /* --- world --- */
@@ -958,12 +1004,12 @@ static void test_chunk_unpack_to_world(void) {
     world_clear(&g);
     /* chunk 0: (0,27), (1,12), (1,45), (2,40), (3 empty) */
     chunk_unpack(&g, 0, /*dest_row=*/0, /*chunk_idx=*/0);
-    ASSERT(world_get(&g, 0, 27) == 'Y');
+    ASSERT(world_get(&g, 0, 27) == 'T');
     ASSERT(world_get(&g, 0, 26) == 0);
     ASSERT(world_get(&g, 0, 28) == 0);
-    ASSERT(world_get(&g, 1, 12) == 'Y');
-    ASSERT(world_get(&g, 1, 45) == 'Y');
-    ASSERT(world_get(&g, 2, 40) == 'Y');
+    ASSERT(world_get(&g, 1, 12) == 'T');
+    ASSERT(world_get(&g, 1, 45) == 'T');
+    ASSERT(world_get(&g, 2, 40) == 'T');
     /* row 3 fully empty */
     for (int c = 0; c < PLAYFIELD_W; c++) {
         ASSERT(world_get(&g, 3, c) == 0);
@@ -1009,7 +1055,7 @@ LOCAL void chunk_unpack(struct game *g, int dest_row, int chunk_idx) {
             int byte = c / 8;
             int bit  = 7 - (c % 8);
             int set  = (chunk_pool[chunk_idx][r][byte] >> bit) & 1;
-            world_set(g, dest_row + r, c, set ? 'Y' : 0);
+            world_set(g, dest_row + r, c, set ? 'T' : 0);
         }
     }
 }
@@ -1055,7 +1101,7 @@ static void test_world_scroll_clears_new_top_row(void) {
     world_clear(&g);
     /* mark the cell that will become the new last row */
     int last = (g.world_top + BUF_H - 1) % BUF_H;
-    g.world[last][0] = 'Y';
+    g.world[last][0] = 'T';
     world_scroll(&g);
     /* after scroll, that row is now the topmost — and its old content
      * should remain (we haven't generated new content). Only world_gen
@@ -1182,9 +1228,10 @@ Expected: compile error referencing `game_init`.
 
 - [ ] **Step 3: Implement `game_init`**
 
-Add to the `/* --- state --- */` section (after the struct definition):
+Add to the `/* --- step / draw --- */` section, replacing its placeholder comment (game_init lives in the orchestrator section because it calls `world_clear` and `xorshift_uniform` — both defined in earlier sections):
 
 ```c
+/* --- step / draw --- */
 LOCAL void game_init(struct game *g, unsigned int seed) {
     memset(g, 0, sizeof(*g));
     g->rng = seed ? seed : 1;
@@ -1262,7 +1309,7 @@ static void test_player_clamps_at_right(void) {
 static void test_player_collision_left_cell(void) {
     struct game g;
     game_init(&g, 1);
-    world_set(&g, PLAYER_ROW, g.player_col, 'Y');
+    world_set(&g, PLAYER_ROW, g.player_col, 'T');
     player_check_collision(&g);
     ASSERT(g.alive == 0);
 }
@@ -1270,7 +1317,7 @@ static void test_player_collision_left_cell(void) {
 static void test_player_collision_right_cell(void) {
     struct game g;
     game_init(&g, 1);
-    world_set(&g, PLAYER_ROW, g.player_col + 1, 'Y');
+    world_set(&g, PLAYER_ROW, g.player_col + 1, 'T');
     player_check_collision(&g);
     ASSERT(g.alive == 0);
 }
@@ -1315,7 +1362,7 @@ Expected: compile errors referencing `player_step` and `player_check_collision`.
 
 - [ ] **Step 3: Implement player movement and collision**
 
-Add a new section before `/* --- main --- */`:
+Fill the `/* --- player --- */` section, replacing its placeholder comment:
 
 ```c
 /* --- player --- */
@@ -1331,7 +1378,7 @@ LOCAL void player_step(struct game *g, int input) {
 LOCAL void player_check_collision(struct game *g) {
     char left  = world_get(g, PLAYER_ROW, g->player_col);
     char right = world_get(g, PLAYER_ROW, g->player_col + 1);
-    if (left == 'Y' || right == 'Y') g->alive = 0;
+    if (left == 'T' || right == 'T') g->alive = 0;
 }
 ```
 
@@ -1441,7 +1488,7 @@ Expected: compile error referencing `yeti_step`.
 
 - [ ] **Step 3: Implement yeti reveal + chase**
 
-Add a new section before `/* --- player --- */`:
+Fill the `/* --- yeti --- */` section (which sits *below* `/* --- player --- */` in the pre-created skeleton, so `player_lean_input` is already declared), replacing its placeholder comment:
 
 ```c
 /* --- yeti --- */
@@ -1544,10 +1591,9 @@ Expected: compile errors referencing `step`.
 
 - [ ] **Step 3: Implement `step()` and speed ramp**
 
-Add a new section before `/* --- main --- */`:
+Append to the `/* --- step / draw --- */` section, *after* the existing `game_init` (which Task 12 added). Do not duplicate the `/* --- step / draw --- */` divider — it already exists. Add:
 
 ```c
-/* --- step / draw --- */
 LOCAL void update_scroll_period(struct game *g) {
     /* Linear ramp from SCROLL_PERIOD_START to SCROLL_PERIOD_END over 60 s. */
     int ramp_ticks = 60 * (1000 / FRAME_MS);
@@ -1610,7 +1656,7 @@ git commit -m "feat(game): add step orchestrator with speed ramp"
 
 Add `<signal.h>` and `<stdlib.h>` to includes.
 
-Add a new section before `/* --- cli --- */` (which we'll add later — for now, place it before `/* --- main --- */`):
+Fill the `/* --- term --- */` section, replacing its placeholder comment. Because this section sits *above* `/* --- step / draw --- */` in the skeleton, `sig_quit` and `sig_resize` are already in scope for the orchestrator's main loop:
 
 ```c
 /* --- term --- */
@@ -1736,7 +1782,7 @@ LOCAL void draw(const struct game *g) {
     for (int r = 0; r < LINES && r < BUF_H; r++) {
         for (int c = 0; c < PLAYFIELD_W; c++) {
             char cell = world_get(g, r, c);
-            if (cell == 'Y') {
+            if (cell == 'T') {
                 attron(COLOR_PAIR(PAIR_TREE));
                 mvaddch(r, PLAYFIELD_X_OFF + c, 'Y');
                 attroff(COLOR_PAIR(PAIR_TREE));
@@ -1781,9 +1827,9 @@ int main(int argc, char **argv) {
     struct game g;
     game_init(&g, 1);
     /* Manually populate the world with a couple of trees so we can see them. */
-    world_set(&g, 5, 20, 'Y');
-    world_set(&g, 5, 40, 'Y');
-    world_set(&g, 12, 10, 'Y');
+    world_set(&g, 5, 20, 'T');
+    world_set(&g, 5, 40, 'T');
+    world_set(&g, 12, 10, 'T');
     draw(&g);
     getch();
     term_cleanup();
@@ -1800,7 +1846,7 @@ make && ./yeti
 
 Expected:
 - HUD `DIST     0m` top-right in yellow
-- Three green `Y`s on screen
+- Three green `T`s on screen
 - White bold `||` skier near center at row 7
 - Any key exits cleanly
 
@@ -2046,7 +2092,7 @@ Expected: compile error referencing `cli_opts`, `cli_parse`.
 
 - [ ] **Step 3: Implement CLI**
 
-Add a new section before `/* --- main --- */`:
+Fill the `/* --- cli --- */` section, replacing its placeholder comment:
 
 ```c
 /* --- cli --- */
