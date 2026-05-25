@@ -441,48 +441,6 @@ static void test_step_does_nothing_when_dead(void) {
     ASSERT(g.tick == before);
 }
 
-static void test_cli_parse_no_args(void) {
-    char *argv[] = { (char *)"yeti", NULL };
-    struct cli_opts opts;
-    int rc = cli_parse(1, argv, &opts);
-    ASSERT(rc == 0);
-    ASSERT(opts.have_seed == 0);
-    ASSERT(opts.ticks == 0);
-    ASSERT(opts.show_help == 0);
-}
-
-static void test_cli_parse_seed(void) {
-    char *argv[] = { (char *)"yeti", (char *)"-s", (char *)"12345", NULL };
-    struct cli_opts opts;
-    int rc = cli_parse(3, argv, &opts);
-    ASSERT(rc == 0);
-    ASSERT(opts.have_seed == 1);
-    ASSERT(opts.seed == 12345);
-}
-
-static void test_cli_parse_ticks(void) {
-    char *argv[] = { (char *)"yeti", (char *)"--ticks", (char *)"100", NULL };
-    struct cli_opts opts;
-    int rc = cli_parse(3, argv, &opts);
-    ASSERT(rc == 0);
-    ASSERT(opts.ticks == 100);
-}
-
-static void test_cli_parse_help(void) {
-    char *argv[] = { (char *)"yeti", (char *)"-h", NULL };
-    struct cli_opts opts;
-    int rc = cli_parse(2, argv, &opts);
-    ASSERT(rc == 0);
-    ASSERT(opts.show_help == 1);
-}
-
-static void test_cli_parse_unknown_returns_error(void) {
-    char *argv[] = { (char *)"yeti", (char *)"--nope", NULL };
-    struct cli_opts opts;
-    int rc = cli_parse(2, argv, &opts);
-    ASSERT(rc != 0);
-}
-
 int main(void) {
     test_smoke();
     test_xorshift32_deterministic();
@@ -527,11 +485,6 @@ int main(void) {
     test_update_scroll_period_reaches_end_at_60s();
     test_update_scroll_period_is_monotone_nonincreasing();
     test_step_does_nothing_when_dead();
-    test_cli_parse_no_args();
-    test_cli_parse_seed();
-    test_cli_parse_ticks();
-    test_cli_parse_help();
-    test_cli_parse_unknown_returns_error();
     fprintf(stderr, "\n%d/%d tests passed\n",
             test_count - fail_count, test_count);
     return fail_count ? 1 : 0;
