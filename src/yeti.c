@@ -246,6 +246,39 @@ LOCAL void game_init(struct game *g, unsigned int seed) {
                         + (int)xorshift_uniform(&g->rng, (unsigned int)range_ticks);
 }
 
+LOCAL void update_scroll_period(struct game *g) {
+    /* Linear ramp from SCROLL_PERIOD_START to SCROLL_PERIOD_END over 60 s. */
+    int ramp_ticks = 60 * (1000 / FRAME_MS);
+    int span = SCROLL_PERIOD_START - SCROLL_PERIOD_END;
+    int reduced = (g->tick * span) / ramp_ticks;
+    if (reduced > span) reduced = span;
+    int target = SCROLL_PERIOD_START - reduced;
+    /* Allow the yeti-reveal jolt (which already nudged it lower) to stick. */
+    if (target < g->scroll_period) g->scroll_period = target;
+}
+
+LOCAL void step(struct game *g, int input) {
+    if (!g->alive) return;
+
+    g->tick++;
+    update_scroll_period(g);
+
+    player_step(g, input);
+    yeti_step(g, input);
+
+    g->ticks_since_scroll++;
+    if (g->ticks_since_scroll >= g->scroll_period) {
+        g->ticks_since_scroll = 0;
+        world_scroll(g);
+        g->distance++;
+        if ((g->distance % CHUNK_ROWS) == 0) {
+            world_gen_chunk(g);
+        }
+    }
+
+    player_check_collision(g);
+}
+
 /* --- cli --- */
 /* (filled in Task 20) */
 
