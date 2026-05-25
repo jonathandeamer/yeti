@@ -430,21 +430,69 @@ LOCAL void play_one_run(struct game *g, int max_ticks) {
 }
 
 /* --- cli --- */
-/* (filled in Task 20) */
+struct cli_opts {
+    int show_help;
+    int have_seed;
+    unsigned int seed;
+    int ticks;
+};
+
+LOCAL int cli_parse(int argc, char **argv, struct cli_opts *opts) {
+    memset(opts, 0, sizeof(*opts));
+    for (int i = 1; i < argc; i++) {
+        const char *a = argv[i];
+        if (!strcmp(a, "-h") || !strcmp(a, "--help")) {
+            opts->show_help = 1;
+        } else if (!strcmp(a, "-s") && i + 1 < argc) {
+            opts->have_seed = 1;
+            opts->seed = (unsigned int)strtoul(argv[++i], NULL, 10);
+        } else if (!strcmp(a, "--ticks") && i + 1 < argc) {
+            opts->ticks = (int)strtol(argv[++i], NULL, 10);
+        } else {
+            fprintf(stderr, "yeti: unknown argument: %s\n", a);
+            return 1;
+        }
+    }
+    return 0;
+}
+
+LOCAL void cli_print_help(void) {
+    fputs(
+        "yeti - ski down a mountain until the yeti finds you\n"
+        "\n"
+        "USAGE\n"
+        "    yeti [-s SEED]\n"
+        "\n"
+        "OPTIONS\n"
+        "    -h, --help        show this help and exit\n"
+        "    -s SEED           set RNG seed for a deterministic run\n"
+        "\n"
+        "CONTROLS\n"
+        "    LEFT / RIGHT      lean\n"
+        "    Q, ESC            quit\n"
+        "    R                 restart from death\n",
+        stdout);
+}
 
 /* --- main --- */
 #ifndef GAME_TEST
 int main(int argc, char **argv) {
-    (void)argc;
-    (void)argv;
+    struct cli_opts opts;
+    if (cli_parse(argc, argv, &opts) != 0) return 2;
+    if (opts.show_help) { cli_print_help(); return 0; }
+
     if (!term_init()) return 1;
 
+    unsigned int seed = opts.have_seed
+        ? opts.seed
+        : (unsigned int)(time(NULL) ^ getpid());
+
     struct game g;
-    unsigned int seed = (unsigned int)(time(NULL) ^ getpid());
     game_init(&g, seed);
 
     while (!sig_quit) {
-        play_one_run(&g, 0);
+        play_one_run(&g, opts.ticks);
+        if (opts.ticks > 0) break;  /* test mode: one run then exit */
         if (sig_quit || g.alive) break;
         if (!death_screen(&g)) break;
         game_init(&g, (unsigned int)(time(NULL) ^ getpid()));
