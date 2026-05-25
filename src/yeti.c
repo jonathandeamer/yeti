@@ -214,7 +214,7 @@ static int term_init(void) {
     init_pair(PAIR_TREE,   COLOR_GREEN,  COLOR_BLACK);
     init_pair(PAIR_PLAYER, COLOR_CYAN,   COLOR_BLACK);
     init_pair(PAIR_YETI,   COLOR_RED,    COLOR_BLACK);
-    init_pair(PAIR_HUD,    COLOR_YELLOW, COLOR_BLACK);
+    init_pair(PAIR_HUD,    COLOR_WHITE,  COLOR_BLACK);
 
     if (LINES < 24 || COLS < 80) {
         endwin();
@@ -302,9 +302,9 @@ static void draw(const struct game *g) {
         }
     }
 
-    attron(COLOR_PAIR(PAIR_HUD) | A_DIM);
-    mvprintw(0, COLS - 13, "DIST %5dm", g->distance);
-    attroff(COLOR_PAIR(PAIR_HUD) | A_DIM);
+    attron(COLOR_PAIR(PAIR_HUD));
+    mvprintw(0, COLS - 17, "DISTANCE %5dm", g->distance);
+    attroff(COLOR_PAIR(PAIR_HUD));
 
     refresh();
 }
@@ -313,7 +313,7 @@ static int death_screen(const struct game *g) {
     int cx = COLS / 2;
     int cy = LINES / 2;
     attron(COLOR_PAIR(PAIR_PLAYER) | A_BOLD);
-    mvprintw(cy - 1, cx - 6, "DIST %5dm", g->distance);
+    mvprintw(cy - 1, cx - 8, "YOU SKIED %5dm", g->distance);
     mvprintw(cy + 1, cx - 16, "PRESS R TO RESTART  -  Q TO QUIT");
     attroff(COLOR_PAIR(PAIR_PLAYER) | A_BOLD);
     refresh();
