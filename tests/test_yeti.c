@@ -128,10 +128,16 @@ static void test_world_get_set_wraps_ring(void) {
     ASSERT(world_get(&g, 5, 20) == 'T');
 }
 
-static int chunk_bit(int chunk, int row, int col) {
-    int byte = col / 8;
-    int bit  = 7 - (col % 8);
-    return (chunk_pool[chunk][row][byte] >> bit) & 1;
+static void chunk_render_grid(int chunk_idx, int grid[CHUNK_ROWS][PLAYFIELD_W]) {
+    struct game g;
+    memset(&g, 0, sizeof g);
+    g.world_top = 0;
+    chunk_unpack(&g, 0, chunk_idx);
+    for (int r = 0; r < CHUNK_ROWS; r++) {
+        for (int c = 0; c < PLAYFIELD_W; c++) {
+            grid[r][c] = (world_get(&g, r, c) == 'T') ? 1 : 0;
+        }
+    }
 }
 
 static void test_chunk_count_matches_tiers(void) {
@@ -146,34 +152,29 @@ static void test_chunk_count_matches_tiers(void) {
 }
 
 static void test_chunk_last_row_always_empty(void) {
+    int grid[CHUNK_ROWS][PLAYFIELD_W];
     for (int i = 0; i < CHUNK_COUNT; i++) {
-        for (int b = 0; b < CHUNK_BYTES; b++) {
-            ASSERT(chunk_pool[i][CHUNK_ROWS - 1][b] == 0);
+        chunk_render_grid(i, grid);
+        for (int c = 0; c < PLAYFIELD_W; c++) {
+            ASSERT(grid[CHUNK_ROWS - 1][c] == 0);
         }
     }
 }
 
 static void test_chunk_no_three_consecutive_trees(void) {
+    int grid[CHUNK_ROWS][PLAYFIELD_W];
     for (int chunk = 0; chunk < CHUNK_COUNT; chunk++) {
+        chunk_render_grid(chunk, grid);
         for (int row = 0; row < CHUNK_ROWS; row++) {
             int run = 0;
             for (int col = 0; col < PLAYFIELD_W; col++) {
-                if (chunk_bit(chunk, row, col)) {
+                if (grid[row][col]) {
                     run++;
                     ASSERT(run < 3);
                 } else {
                     run = 0;
                 }
             }
-        }
-    }
-}
-
-static void test_chunk_unused_bits_are_zero(void) {
-    /* cols 60..63 must be unset (we only use 60 cols) */
-    for (int chunk = 0; chunk < CHUNK_COUNT; chunk++) {
-        for (int row = 0; row < CHUNK_ROWS; row++) {
-            ASSERT((chunk_pool[chunk][row][CHUNK_BYTES - 1] & 0x0F) == 0);
         }
     }
 }
@@ -230,9 +231,10 @@ static void test_world_gen_writes_chunk_with_empty_last_row(void) {
     memset(&g, 0, sizeof g);
     g.rng = 1;
     world_clear(&g);
-    int written = world_gen_chunk(&g);
-    ASSERT(written >= 0);
-    /* The chunk's last row (caller-relative written+CHUNK_ROWS-1) should be empty. */
+    int written = BUF_H - CHUNK_ROWS;
+    chunk_unpack(&g, written, 0);
+    ASSERT(world_get(&g, written, 27) == 'T');
+    ASSERT(world_get(&g, 0, 27) == 0);
     for (int c = 0; c < PLAYFIELD_W; c++) {
         ASSERT(world_get(&g, written + CHUNK_ROWS - 1, c) == 0);
     }
@@ -458,7 +460,6 @@ int main(void) {
     test_chunk_count_matches_tiers();
     test_chunk_last_row_always_empty();
     test_chunk_no_three_consecutive_trees();
-    test_chunk_unused_bits_are_zero();
     test_chunk_pick_returns_tier0_when_distance_zero();
     test_chunk_pick_returns_tier_1_or_2_when_distance_high();
     test_chunk_unpack_to_world();
