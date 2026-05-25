@@ -147,6 +147,34 @@ LOCAL void world_set(struct game *g, int row, int col, char v) {
     g->world[idx][col] = v;
 }
 
+LOCAL int chunk_pick(unsigned int *rng, int distance) {
+    /* Density ramp:
+     *   distance <  100  -> tier 0 only
+     *   distance <  200  -> tier 0 or 1 (50/50)
+     *   distance >= 200  -> tier 1 or 2 (50/50)
+     */
+    int min_tier, max_tier;
+    if (distance < 100)       { min_tier = 0; max_tier = 0; }
+    else if (distance < 200)  { min_tier = 0; max_tier = 1; }
+    else                      { min_tier = 1; max_tier = 2; }
+
+    for (;;) {
+        int i = (int)xorshift_uniform(rng, CHUNK_COUNT);
+        if (chunk_tier[i] >= min_tier && chunk_tier[i] <= max_tier) return i;
+    }
+}
+
+LOCAL void chunk_unpack(struct game *g, int dest_row, int chunk_idx) {
+    for (int r = 0; r < CHUNK_ROWS; r++) {
+        for (int c = 0; c < PLAYFIELD_W; c++) {
+            int byte = c / 8;
+            int bit  = 7 - (c % 8);
+            int set  = (chunk_pool[chunk_idx][r][byte] >> bit) & 1;
+            world_set(g, dest_row + r, c, set ? 'T' : 0);
+        }
+    }
+}
+
 /* --- player --- */
 /* (filled in Task 13) */
 
