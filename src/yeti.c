@@ -198,7 +198,20 @@ LOCAL int world_gen_chunk(struct game *g) {
 /* (filled in Task 16) */
 
 /* --- step / draw --- */
-/* (filled in Tasks 12, 15, 17, 18, 19) */
+LOCAL void game_init(struct game *g, unsigned int seed) {
+    memset(g, 0, sizeof(*g));
+    g->rng = seed ? seed : 1;
+    g->alive = 1;
+    g->player_col = PLAYFIELD_W / 2 - 1;
+    g->scroll_period = SCROLL_PERIOD_START;
+    g->world_top = 0;
+    world_clear(g);
+
+    int range_s = REVEAL_MAX_S - REVEAL_MIN_S;
+    int range_ticks = range_s * (1000 / FRAME_MS);
+    g->yeti_reveal_tick = REVEAL_MIN_S * (1000 / FRAME_MS)
+                        + (int)xorshift_uniform(&g->rng, (unsigned int)range_ticks);
+}
 
 /* --- cli --- */
 /* (filled in Task 20) */
