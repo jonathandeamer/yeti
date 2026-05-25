@@ -54,12 +54,48 @@ static void test_xorshift_uniform_in_range(void) {
     }
 }
 
+static void test_add_ms_basic(void) {
+    struct timespec t = { .tv_sec = 5, .tv_nsec = 0 };
+    add_ms(&t, 1500);
+    ASSERT(t.tv_sec == 6);
+    ASSERT(t.tv_nsec == 500000000);
+}
+
+static void test_add_ms_wrap(void) {
+    struct timespec t = { .tv_sec = 5, .tv_nsec = 900000000 };
+    add_ms(&t, 200);
+    ASSERT(t.tv_sec == 6);
+    ASSERT(t.tv_nsec == 100000000);
+}
+
+static void test_ms_until_positive(void) {
+    struct timespec now;
+    clock_gettime(CLOCK_MONOTONIC, &now);
+    struct timespec future = now;
+    add_ms(&future, 50);
+    int ms = ms_until(future);
+    ASSERT(ms > 0 && ms <= 50);
+}
+
+static void test_ms_until_past_returns_nonpositive(void) {
+    struct timespec now;
+    clock_gettime(CLOCK_MONOTONIC, &now);
+    struct timespec past = now;
+    past.tv_sec -= 1;
+    int ms = ms_until(past);
+    ASSERT(ms <= 0);
+}
+
 int main(void) {
     test_smoke();
     test_xorshift32_deterministic();
     test_xorshift32_nontrivial();
     test_xorshift32_different_seeds();
     test_xorshift_uniform_in_range();
+    test_add_ms_basic();
+    test_add_ms_wrap();
+    test_ms_until_positive();
+    test_ms_until_past_returns_nonpositive();
     fprintf(stderr, "\n%d/%d tests passed\n",
             test_count - fail_count, test_count);
     return fail_count ? 1 : 0;

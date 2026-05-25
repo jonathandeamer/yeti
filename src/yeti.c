@@ -3,6 +3,7 @@
 
 /* --- includes --- */
 #include <stdio.h>
+#include <time.h>
 
 /* --- test visibility --- */
 #ifdef GAME_TEST
@@ -18,7 +19,22 @@
 /* (filled in Task 7) */
 
 /* --- time --- */
-/* (filled in Task 6) */
+LOCAL void add_ms(struct timespec *t, long ms) {
+    t->tv_sec += ms / 1000;
+    t->tv_nsec += (ms % 1000) * 1000000L;
+    if (t->tv_nsec >= 1000000000L) {
+        t->tv_sec += 1;
+        t->tv_nsec -= 1000000000L;
+    }
+}
+
+LOCAL int ms_until(struct timespec t) {
+    struct timespec now;
+    clock_gettime(CLOCK_MONOTONIC, &now);
+    long sec = t.tv_sec - now.tv_sec;
+    long nsec = t.tv_nsec - now.tv_nsec;
+    return (int)(sec * 1000 + nsec / 1000000);
+}
 
 /* --- prng --- */
 LOCAL unsigned int xorshift32(unsigned int *s) {
