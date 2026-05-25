@@ -82,9 +82,9 @@ static unsigned int xorshift_uniform(unsigned int *s, unsigned int n) {
 
 /* --- world --- */
 static const char *chunks[CHUNK_COUNT] = {
-    "27|12,45|40",
-    "7,45|25|18,49",
-    "18|6,37|26",
+    "18,34|24,42|12,30,48",
+    "10,28,46|20,38|15,33,51",
+    "14,32,50|8,26,44|22,40",
     "5,19,38|12,29,46|8,21,45",
     "2,15,36|8,27,47|4,18,36",
     "7,22,41|2,20,45|11,31,48",
@@ -110,8 +110,8 @@ static void world_set(struct game *g, int row, int col, char v) {
 
 static int chunk_pick(unsigned int *rng, int distance) {
     int min_tier, max_tier;
-    if (distance < 100)       { min_tier = 0; max_tier = 0; }
-    else if (distance < 200)  { min_tier = 0; max_tier = 1; }
+    if (distance < 40)        { min_tier = 0; max_tier = 0; }
+    else if (distance < 120)  { min_tier = 0; max_tier = 1; }
     else                      { min_tier = 1; max_tier = 2; }
 
     for (;;) {
@@ -211,7 +211,7 @@ static int term_init(void) {
     curs_set(0);
     start_color();
     init_pair(PAIR_TREE,   COLOR_GREEN,  COLOR_BLACK);
-    init_pair(PAIR_PLAYER, COLOR_WHITE,  COLOR_BLACK);
+    init_pair(PAIR_PLAYER, COLOR_CYAN,   COLOR_BLACK);
     init_pair(PAIR_YETI,   COLOR_RED,    COLOR_BLACK);
     init_pair(PAIR_HUD,    COLOR_YELLOW, COLOR_BLACK);
 
