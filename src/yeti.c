@@ -214,63 +214,37 @@ LOCAL void yeti_step(struct game *g, int input) {
 
 /* --- term --- */
 static volatile sig_atomic_t sig_quit = 0;
-static volatile sig_atomic_t sig_resize = 0;
-static int curses_initialized = 0;
 
 static void on_signal(int sig) {
-    if (sig == SIGINT || sig == SIGTERM) sig_quit = 1;
-    if (sig == SIGWINCH) sig_resize = 1;
+    (void)sig;
+    sig_quit = 1;
 }
 
 static void term_cleanup(void) {
-    if (curses_initialized) {
-        endwin();
-        curses_initialized = 0;
-    }
+    endwin();
 }
 
 static int term_init(void) {
-    const char *term = getenv("TERM");
-    if (!term || !*term || !strcmp(term, "dumb")) {
-        fputs("needs a real terminal\n", stderr);
-        return 0;
-    }
     setenv("ESCDELAY", "25", 0);
-    if (!initscr()) {
-        fputs("initscr failed\n", stderr);
-        return 0;
-    }
-    curses_initialized = 1;
+    initscr();
     cbreak();
     noecho();
     keypad(stdscr, TRUE);
     curs_set(0);
-
-    if (has_colors()) {
-        start_color();
-        use_default_colors();
-        init_pair(PAIR_TREE,   COLOR_GREEN,  -1);
-        init_pair(PAIR_PLAYER, COLOR_WHITE,  -1);
-        init_pair(PAIR_YETI,   COLOR_RED,    -1);
-        init_pair(PAIR_HUD,    COLOR_YELLOW, -1);
-    }
+    start_color();
+    init_pair(PAIR_TREE,   COLOR_GREEN,  COLOR_BLACK);
+    init_pair(PAIR_PLAYER, COLOR_WHITE,  COLOR_BLACK);
+    init_pair(PAIR_YETI,   COLOR_RED,    COLOR_BLACK);
+    init_pair(PAIR_HUD,    COLOR_YELLOW, COLOR_BLACK);
 
     if (LINES < 24 || COLS < 80) {
-        term_cleanup();
+        endwin();
         fputs("needs 80x24\n", stderr);
         return 0;
     }
 
-    atexit(term_cleanup);
-
-    struct sigaction sa;
-    memset(&sa, 0, sizeof sa);
-    sa.sa_handler = on_signal;
-    sigemptyset(&sa.sa_mask);
-    sigaction(SIGINT,   &sa, NULL);
-    sigaction(SIGTERM,  &sa, NULL);
-    sigaction(SIGWINCH, &sa, NULL);
-
+    signal(SIGINT,  on_signal);
+    signal(SIGTERM, on_signal);
     return 1;
 }
 
@@ -392,10 +366,6 @@ LOCAL void play_one_run(struct game *g) {
             if (ch == ERR) break;
             input = ch;
             if (ch == 'q' || ch == 'Q' || ch == 27) { sig_quit = 1; break; }
-        }
-        if (sig_resize) {
-            sig_resize = 0;
-            if (LINES < 24 || COLS < 80) { sig_quit = 1; break; }
         }
         step(g, input);
         draw(g);
