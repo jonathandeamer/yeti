@@ -390,9 +390,13 @@ LOCAL int death_screen(const struct game *g) {
     attroff(COLOR_PAIR(PAIR_PLAYER) | A_BOLD);
     refresh();
 
-    timeout(-1);  /* block */
+    /* Short timeout so we wake up to poll sig_quit even if libc/ncurses
+     * auto-restart the underlying read across a signal. */
+    timeout(200);
     for (;;) {
         int ch = getch();
+        if (sig_quit) return 0;
+        if (ch == ERR) continue;
         if (ch == 'r' || ch == 'R') return 1;
         if (ch == 'q' || ch == 'Q' || ch == 27) return 0;
     }
