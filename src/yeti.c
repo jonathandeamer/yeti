@@ -340,6 +340,45 @@ LOCAL void step(struct game *g, int input) {
     player_check_collision(g);
 }
 
+LOCAL void draw(const struct game *g) {
+    erase();
+
+    /* Playfield rows */
+    for (int r = 0; r < LINES && r < BUF_H; r++) {
+        for (int c = 0; c < PLAYFIELD_W; c++) {
+            char cell = world_get(g, r, c);
+            if (cell == 'T') {
+                attron(COLOR_PAIR(PAIR_TREE));
+                mvaddch(r, PLAYFIELD_X_OFF + c, 'Y');
+                attroff(COLOR_PAIR(PAIR_TREE));
+            }
+        }
+    }
+
+    /* Player (two cells) */
+    attron(COLOR_PAIR(PAIR_PLAYER) | A_BOLD);
+    mvaddch(PLAYER_ROW, PLAYFIELD_X_OFF + g->player_col, '|');
+    mvaddch(PLAYER_ROW, PLAYFIELD_X_OFF + g->player_col + 1, '|');
+    attroff(COLOR_PAIR(PAIR_PLAYER) | A_BOLD);
+
+    /* Yeti */
+    if (g->yeti_armed) {
+        int yrow = g->yeti_row_fp / FP_SCALE;
+        if (yrow >= 0 && yrow < LINES) {
+            attron(COLOR_PAIR(PAIR_YETI) | A_BOLD);
+            mvaddch(yrow, PLAYFIELD_X_OFF + g->yeti_col, 'Y');
+            attroff(COLOR_PAIR(PAIR_YETI) | A_BOLD);
+        }
+    }
+
+    /* HUD */
+    attron(COLOR_PAIR(PAIR_HUD) | A_DIM);
+    mvprintw(0, COLS - 13, "DIST %5dm", g->distance);
+    attroff(COLOR_PAIR(PAIR_HUD) | A_DIM);
+
+    refresh();
+}
+
 /* --- cli --- */
 /* (filled in Task 20) */
 
