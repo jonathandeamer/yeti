@@ -1,4 +1,5 @@
 /* SPDX-License-Identifier: MIT OR CC0-1.0 */
+#define _POSIX_C_SOURCE 200809L
 
 /* --- includes --- */
 #include <ncurses.h>
