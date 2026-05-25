@@ -3,6 +3,7 @@
 
 /* --- includes --- */
 #include <stdio.h>
+#include <stdint.h>
 #include <time.h>
 
 /* --- test visibility --- */
@@ -13,10 +14,43 @@
 #endif
 
 /* --- constants --- */
-/* (filled in Task 7) */
+#define FRAME_MS         33
+#define PLAYFIELD_W      60
+#define PLAYFIELD_X_OFF  10
+#define PLAYER_ROW       7
+#define BUF_H            32
+#define FP_SCALE         256
+#define CHUNK_COUNT      8
+#define CHUNK_ROWS       4
+#define CHUNK_BYTES      8
+#define REVEAL_MIN_S     30
+#define REVEAL_MAX_S     60
+#define BASE_CLOSING_FP  5
+#define PRESS_COST_FP    30
+#define SCROLL_PERIOD_START  6
+#define SCROLL_PERIOD_END    3
+
+#define PAIR_TREE    1
+#define PAIR_PLAYER  2
+#define PAIR_YETI    3
+#define PAIR_HUD     4
 
 /* --- state --- */
-/* (filled in Task 7) */
+struct game {
+    unsigned int rng;
+    int tick;
+    int distance;
+    int player_col;
+    int alive;
+    int yeti_armed;
+    int yeti_reveal_tick;
+    int yeti_row_fp;
+    int yeti_col;
+    int scroll_period;
+    int ticks_since_scroll;
+    char world[BUF_H][PLAYFIELD_W];
+    int world_top;
+};
 
 /* --- time --- */
 LOCAL void add_ms(struct timespec *t, long ms) {
