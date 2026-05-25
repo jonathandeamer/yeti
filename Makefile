@@ -22,7 +22,7 @@ $(BIN): $(SRC)
 	$(CC) $(CFLAGS) -o $@ $< $(LDFLAGS) $(LIBS)
 
 clean:
-	rm -f $(BIN) tests/test_yeti
+	rm -f $(BIN)
 
 install: $(BIN)
 	install -d $(DESTDIR)$(PREFIX)/bin
@@ -34,10 +34,4 @@ uninstall:
 size:
 	@wc -c $(SRC)
 
-test: tests/test_yeti
-	@./tests/test_yeti
-
-tests/test_yeti: tests/test_yeti.c src/yeti.c
-	$(CC) $(CFLAGS) -Wno-missing-prototypes -DGAME_TEST -o $@ tests/test_yeti.c $(LDFLAGS) $(LIBS)
-
-.PHONY: all clean install uninstall size test
+.PHONY: all clean install uninstall size

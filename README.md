@@ -18,13 +18,6 @@ Requires a C99 compiler and ncurses. ncurses is detected via `pkg-config` with a
 ./yeti
 ```
 
-Optional flags:
-
-| Flag | Effect |
-| --- | --- |
-| `-h`, `--help` | print help and exit |
-| `-s SEED` | deterministic run with the given RNG seed |
-
 ## Controls
 
 | Key | Action |
