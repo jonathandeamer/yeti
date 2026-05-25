@@ -3,8 +3,10 @@
 
 /* --- includes --- */
 #include <ncurses.h>
+#include <signal.h>
 #include <stdio.h>
 #include <stdint.h>
+#include <stdlib.h>
 #include <string.h>
 #include <time.h>
 
@@ -228,7 +230,66 @@ LOCAL void yeti_step(struct game *g, int input) {
 }
 
 /* --- term --- */
-/* (filled in Task 16) */
+static volatile sig_atomic_t sig_quit = 0;
+static volatile sig_atomic_t sig_resize = 0;
+static int curses_initialized = 0;
+
+static void on_signal(int sig) {
+    if (sig == SIGINT || sig == SIGTERM) sig_quit = 1;
+    if (sig == SIGWINCH) sig_resize = 1;
+}
+
+static void term_cleanup(void) {
+    if (curses_initialized) {
+        endwin();
+        curses_initialized = 0;
+    }
+}
+
+static int term_init(void) {
+    const char *term = getenv("TERM");
+    if (!term || !*term || !strcmp(term, "dumb")) {
+        fputs("yeti: requires a real terminal (TERM unset or dumb)\n", stderr);
+        return 0;
+    }
+    setenv("ESCDELAY", "25", 0);
+    if (!initscr()) {
+        fputs("yeti: initscr failed\n", stderr);
+        return 0;
+    }
+    curses_initialized = 1;
+    cbreak();
+    noecho();
+    keypad(stdscr, TRUE);
+    curs_set(0);
+
+    if (has_colors()) {
+        start_color();
+        use_default_colors();
+        init_pair(PAIR_TREE,   COLOR_GREEN,  -1);
+        init_pair(PAIR_PLAYER, COLOR_WHITE,  -1);
+        init_pair(PAIR_YETI,   COLOR_RED,    -1);
+        init_pair(PAIR_HUD,    COLOR_YELLOW, -1);
+    }
+
+    if (LINES < 24 || COLS < 80) {
+        term_cleanup();
+        fputs("yeti: requires an 80x24 terminal or larger\n", stderr);
+        return 0;
+    }
+
+    atexit(term_cleanup);
+
+    struct sigaction sa;
+    memset(&sa, 0, sizeof sa);
+    sa.sa_handler = on_signal;
+    sigemptyset(&sa.sa_mask);
+    sigaction(SIGINT,   &sa, NULL);
+    sigaction(SIGTERM,  &sa, NULL);
+    sigaction(SIGWINCH, &sa, NULL);
+
+    return 1;
+}
 
 /* --- step / draw --- */
 LOCAL void game_init(struct game *g, unsigned int seed) {
