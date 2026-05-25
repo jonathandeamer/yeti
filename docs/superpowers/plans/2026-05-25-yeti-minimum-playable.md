@@ -1784,7 +1784,7 @@ LOCAL void draw(const struct game *g) {
             char cell = world_get(g, r, c);
             if (cell == 'T') {
                 attron(COLOR_PAIR(PAIR_TREE));
-                mvaddch(r, PLAYFIELD_X_OFF + c, 'Y');
+                mvaddch(r, PLAYFIELD_X_OFF + c, 'T');
                 attroff(COLOR_PAIR(PAIR_TREE));
             }
         }
