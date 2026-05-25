@@ -206,7 +206,26 @@ LOCAL void player_check_collision(struct game *g) {
 }
 
 /* --- yeti --- */
-/* (filled in Task 14) */
+LOCAL void yeti_step(struct game *g, int input) {
+    if (!g->yeti_armed) {
+        if (g->tick >= g->yeti_reveal_tick) {
+            g->yeti_armed = 1;
+            g->yeti_row_fp = 0;
+            g->yeti_col = PLAYFIELD_W / 2;
+            if (g->scroll_period > SCROLL_PERIOD_END)
+                g->scroll_period -= 1;
+        }
+        return;
+    }
+
+    g->yeti_row_fp += BASE_CLOSING_FP;
+    if (player_lean_input(input)) g->yeti_row_fp += PRESS_COST_FP;
+
+    if (g->yeti_col < g->player_col) g->yeti_col++;
+    else if (g->yeti_col > g->player_col) g->yeti_col--;
+
+    if (g->yeti_row_fp >= PLAYER_ROW * FP_SCALE) g->alive = 0;
+}
 
 /* --- term --- */
 /* (filled in Task 16) */
