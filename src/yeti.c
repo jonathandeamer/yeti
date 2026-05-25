@@ -379,6 +379,24 @@ LOCAL void draw(const struct game *g) {
     refresh();
 }
 
+LOCAL int death_screen(const struct game *g) {
+    /* Returns 1 if player wants to restart, 0 to quit. */
+    int cx = COLS / 2;
+    int cy = LINES / 2;
+    attron(COLOR_PAIR(PAIR_PLAYER) | A_BOLD);
+    mvprintw(cy - 1, cx - 6, "DIST %5dm", g->distance);
+    mvprintw(cy + 1, cx - 16, "PRESS R TO RESTART  -  Q TO QUIT");
+    attroff(COLOR_PAIR(PAIR_PLAYER) | A_BOLD);
+    refresh();
+
+    timeout(-1);  /* block */
+    for (;;) {
+        int ch = getch();
+        if (ch == 'r' || ch == 'R') return 1;
+        if (ch == 'q' || ch == 'Q' || ch == 27) return 0;
+    }
+}
+
 /* --- cli --- */
 /* (filled in Task 20) */
 
