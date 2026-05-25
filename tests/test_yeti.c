@@ -392,6 +392,55 @@ static void test_yeti_catches_player_when_row_reaches_player_row(void) {
     ASSERT(g.yeti_row_fp >= PLAYER_ROW * FP_SCALE);
 }
 
+static void test_step_increments_tick(void) {
+    struct game g;
+    game_init(&g, 1);
+    step(&g, 0);
+    ASSERT(g.tick == 1);
+    step(&g, 0);
+    ASSERT(g.tick == 2);
+}
+
+static void test_step_scrolls_world_every_scroll_period(void) {
+    struct game g;
+    game_init(&g, 1);
+    int before_top = g.world_top;
+    int before_dist = g.distance;
+    for (int i = 0; i < g.scroll_period; i++) step(&g, 0);
+    ASSERT(g.world_top != before_top);
+    ASSERT(g.distance == before_dist + 1);
+}
+
+static void test_update_scroll_period_reaches_end_at_60s(void) {
+    /* Direct unit test: drive g.tick by hand so the player can't die. */
+    struct game g;
+    game_init(&g, 1);
+    g.tick = 60 * (1000 / FRAME_MS);
+    update_scroll_period(&g);
+    ASSERT(g.scroll_period == SCROLL_PERIOD_END);
+}
+
+static void test_update_scroll_period_is_monotone_nonincreasing(void) {
+    struct game g;
+    game_init(&g, 1);
+    int last = g.scroll_period;
+    for (int t = 0; t <= 60 * (1000 / FRAME_MS); t += 50) {
+        g.tick = t;
+        update_scroll_period(&g);
+        ASSERT(g.scroll_period <= last);
+        last = g.scroll_period;
+    }
+}
+
+static void test_step_does_nothing_when_dead(void) {
+    struct game g;
+    game_init(&g, 1);
+    g.alive = 0;
+    int before = g.tick;
+    step(&g, KEY_LEFT);
+    ASSERT(g.tick == before);
+}
+
 int main(void) {
     test_smoke();
     test_xorshift32_deterministic();
@@ -431,6 +480,11 @@ int main(void) {
     test_yeti_press_cost_adds_to_closing();
     test_yeti_horizontal_drift_toward_player();
     test_yeti_catches_player_when_row_reaches_player_row();
+    test_step_increments_tick();
+    test_step_scrolls_world_every_scroll_period();
+    test_update_scroll_period_reaches_end_at_60s();
+    test_update_scroll_period_is_monotone_nonincreasing();
+    test_step_does_nothing_when_dead();
     fprintf(stderr, "\n%d/%d tests passed\n",
             test_count - fail_count, test_count);
     return fail_count ? 1 : 0;
