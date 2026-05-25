@@ -2,6 +2,7 @@
 #define _POSIX_C_SOURCE 200809L
 
 /* --- includes --- */
+#include <ncurses.h>
 #include <stdio.h>
 #include <stdint.h>
 #include <string.h>
@@ -189,7 +190,20 @@ LOCAL int world_gen_chunk(struct game *g) {
 }
 
 /* --- player --- */
-/* (filled in Task 13) */
+LOCAL int player_lean_input(int input) {
+    return input == KEY_LEFT || input == KEY_RIGHT;
+}
+
+LOCAL void player_step(struct game *g, int input) {
+    if (input == KEY_LEFT && g->player_col > 0) g->player_col--;
+    else if (input == KEY_RIGHT && g->player_col < PLAYFIELD_W - 2) g->player_col++;
+}
+
+LOCAL void player_check_collision(struct game *g) {
+    char left  = world_get(g, PLAYER_ROW, g->player_col);
+    char right = world_get(g, PLAYER_ROW, g->player_col + 1);
+    if (left == 'T' || right == 'T') g->alive = 0;
+}
 
 /* --- yeti --- */
 /* (filled in Task 14) */

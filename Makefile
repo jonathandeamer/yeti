@@ -5,6 +5,11 @@ CFLAGS  ?= -std=c99 -Wall -Wextra -Wpedantic -Wshadow \
 LDFLAGS ?=
 LIBS    ?=
 
+LIBS_NCURSES   := $(shell pkg-config --libs ncurses 2>/dev/null || echo -lncurses)
+CFLAGS_NCURSES := $(shell pkg-config --cflags ncurses 2>/dev/null)
+CFLAGS += $(CFLAGS_NCURSES)
+LIBS   += $(LIBS_NCURSES)
+
 PREFIX  ?= /usr/local
 DESTDIR ?=
 
