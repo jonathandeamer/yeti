@@ -325,6 +325,73 @@ static void test_player_no_collision_when_clear(void) {
     ASSERT(g.alive == 1);
 }
 
+static void test_yeti_pre_reveal_does_nothing(void) {
+    struct game g;
+    game_init(&g, 1);
+    g.tick = 100;  /* well before reveal */
+    int before_row = g.yeti_row_fp;
+    yeti_step(&g, 0);
+    ASSERT(g.yeti_armed == 0);
+    ASSERT(g.yeti_row_fp == before_row);
+}
+
+static void test_yeti_arms_at_reveal_tick(void) {
+    struct game g;
+    game_init(&g, 1);
+    g.tick = g.yeti_reveal_tick;
+    yeti_step(&g, 0);
+    ASSERT(g.yeti_armed == 1);
+    ASSERT(g.yeti_col == PLAYFIELD_W / 2);
+    ASSERT(g.scroll_period == SCROLL_PERIOD_START - 1);
+}
+
+static void test_yeti_closes_baseline(void) {
+    struct game g;
+    game_init(&g, 1);
+    g.yeti_armed = 1;
+    g.yeti_row_fp = 0;
+    yeti_step(&g, 0);
+    ASSERT(g.yeti_row_fp == BASE_CLOSING_FP);
+}
+
+static void test_yeti_press_cost_adds_to_closing(void) {
+    struct game g;
+    game_init(&g, 1);
+    g.yeti_armed = 1;
+    g.yeti_row_fp = 0;
+    yeti_step(&g, KEY_LEFT);
+    ASSERT(g.yeti_row_fp == BASE_CLOSING_FP + PRESS_COST_FP);
+}
+
+static void test_yeti_horizontal_drift_toward_player(void) {
+    struct game g;
+    game_init(&g, 1);
+    g.yeti_armed = 1;
+    g.yeti_col = 10;
+    g.player_col = 30;
+    yeti_step(&g, 0);
+    ASSERT(g.yeti_col == 11);
+
+    g.yeti_col = 30;
+    g.player_col = 5;
+    yeti_step(&g, 0);
+    ASSERT(g.yeti_col == 29);
+}
+
+static void test_yeti_catches_player_when_row_reaches_player_row(void) {
+    struct game g;
+    game_init(&g, 1);
+    g.yeti_armed = 1;
+    g.yeti_row_fp = (PLAYER_ROW - 1) * FP_SCALE;
+    /* one more closing step pushes us at or past player row */
+    for (int i = 0; i < 256 / BASE_CLOSING_FP + 1; i++) {
+        yeti_step(&g, 0);
+        if (!g.alive) break;
+    }
+    ASSERT(g.alive == 0);
+    ASSERT(g.yeti_row_fp >= PLAYER_ROW * FP_SCALE);
+}
+
 int main(void) {
     test_smoke();
     test_xorshift32_deterministic();
@@ -358,6 +425,12 @@ int main(void) {
     test_player_collision_left_cell();
     test_player_collision_right_cell();
     test_player_no_collision_when_clear();
+    test_yeti_pre_reveal_does_nothing();
+    test_yeti_arms_at_reveal_tick();
+    test_yeti_closes_baseline();
+    test_yeti_press_cost_adds_to_closing();
+    test_yeti_horizontal_drift_toward_player();
+    test_yeti_catches_player_when_row_reaches_player_row();
     fprintf(stderr, "\n%d/%d tests passed\n",
             test_count - fail_count, test_count);
     return fail_count ? 1 : 0;
