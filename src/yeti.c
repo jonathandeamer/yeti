@@ -9,6 +9,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
+#include <unistd.h>
 
 /* --- test visibility --- */
 #ifdef GAME_TEST
@@ -397,6 +398,37 @@ LOCAL int death_screen(const struct game *g) {
     }
 }
 
+LOCAL void play_one_run(struct game *g, int max_ticks) {
+    /* max_ticks = 0 means run until death or quit. */
+    struct timespec next;
+    clock_gettime(CLOCK_MONOTONIC, &next);
+
+    /* Seed the world with two chunks so something is on screen at start. */
+    chunk_unpack(g, BUF_H - CHUNK_ROWS * 2, chunk_pick(&g->rng, 0));
+    chunk_unpack(g, BUF_H - CHUNK_ROWS,     chunk_pick(&g->rng, 0));
+
+    while (g->alive && !sig_quit) {
+        if (max_ticks > 0 && g->tick >= max_ticks) break;
+
+        add_ms(&next, FRAME_MS);
+        int input = 0;
+        for (;;) {
+            int ms_left = ms_until(next);
+            timeout(ms_left > 0 ? ms_left : 0);
+            int ch = getch();
+            if (ch == ERR) break;
+            input = ch;
+            if (ch == 'q' || ch == 'Q' || ch == 27) { sig_quit = 1; break; }
+        }
+        if (sig_resize) {
+            sig_resize = 0;
+            if (LINES < 24 || COLS < 80) { sig_quit = 1; break; }
+        }
+        step(g, input);
+        draw(g);
+    }
+}
+
 /* --- cli --- */
 /* (filled in Task 20) */
 
@@ -405,7 +437,20 @@ LOCAL int death_screen(const struct game *g) {
 int main(int argc, char **argv) {
     (void)argc;
     (void)argv;
-    fputs("yeti: stub\n", stdout);
+    if (!term_init()) return 1;
+
+    struct game g;
+    unsigned int seed = (unsigned int)(time(NULL) ^ getpid());
+    game_init(&g, seed);
+
+    while (!sig_quit) {
+        play_one_run(&g, 0);
+        if (sig_quit || g.alive) break;
+        if (!death_screen(&g)) break;
+        game_init(&g, (unsigned int)(time(NULL) ^ getpid()));
+    }
+
+    term_cleanup();
     return 0;
 }
 #endif
