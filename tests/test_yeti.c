@@ -128,6 +128,56 @@ static void test_world_get_set_wraps_ring(void) {
     ASSERT(world_get(&g, 5, 20) == 'T');
 }
 
+static int chunk_bit(int chunk, int row, int col) {
+    int byte = col / 8;
+    int bit  = 7 - (col % 8);
+    return (chunk_pool[chunk][row][byte] >> bit) & 1;
+}
+
+static void test_chunk_count_matches_tiers(void) {
+    int tiers[3] = { 0, 0, 0 };
+    for (int i = 0; i < CHUNK_COUNT; i++) {
+        ASSERT(chunk_tier[i] <= 2);
+        tiers[chunk_tier[i]]++;
+    }
+    ASSERT(tiers[0] == 3);
+    ASSERT(tiers[1] == 3);
+    ASSERT(tiers[2] == 2);
+}
+
+static void test_chunk_last_row_always_empty(void) {
+    for (int i = 0; i < CHUNK_COUNT; i++) {
+        for (int b = 0; b < CHUNK_BYTES; b++) {
+            ASSERT(chunk_pool[i][CHUNK_ROWS - 1][b] == 0);
+        }
+    }
+}
+
+static void test_chunk_no_three_consecutive_trees(void) {
+    for (int chunk = 0; chunk < CHUNK_COUNT; chunk++) {
+        for (int row = 0; row < CHUNK_ROWS; row++) {
+            int run = 0;
+            for (int col = 0; col < PLAYFIELD_W; col++) {
+                if (chunk_bit(chunk, row, col)) {
+                    run++;
+                    ASSERT(run < 3);
+                } else {
+                    run = 0;
+                }
+            }
+        }
+    }
+}
+
+static void test_chunk_unused_bits_are_zero(void) {
+    /* cols 60..63 must be unset (we only use 60 cols) */
+    for (int chunk = 0; chunk < CHUNK_COUNT; chunk++) {
+        for (int row = 0; row < CHUNK_ROWS; row++) {
+            ASSERT((chunk_pool[chunk][row][CHUNK_BYTES - 1] & 0x0F) == 0);
+        }
+    }
+}
+
 int main(void) {
     test_smoke();
     test_xorshift32_deterministic();
@@ -142,6 +192,10 @@ int main(void) {
     test_world_get_set_roundtrip();
     test_world_get_set_honors_ring_top();
     test_world_get_set_wraps_ring();
+    test_chunk_count_matches_tiers();
+    test_chunk_last_row_always_empty();
+    test_chunk_no_three_consecutive_trees();
+    test_chunk_unused_bits_are_zero();
     fprintf(stderr, "\n%d/%d tests passed\n",
             test_count - fail_count, test_count);
     return fail_count ? 1 : 0;
