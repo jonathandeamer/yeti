@@ -1,0 +1,4 @@
+yeti
+tests/test_yeti
+*.o
+*.dSYM/
