@@ -217,6 +217,27 @@ static void test_chunk_unpack_to_world(void) {
     }
 }
 
+static void test_world_scroll_advances_top(void) {
+    struct game g;
+    memset(&g, 0, sizeof g);
+    int before = g.world_top;
+    world_scroll(&g);
+    ASSERT(g.world_top == (before + 1) % BUF_H);
+}
+
+static void test_world_gen_writes_chunk_with_empty_last_row(void) {
+    struct game g;
+    memset(&g, 0, sizeof g);
+    g.rng = 1;
+    world_clear(&g);
+    int written = world_gen_chunk(&g);
+    ASSERT(written >= 0);
+    /* The chunk's last row (caller-relative written+CHUNK_ROWS-1) should be empty. */
+    for (int c = 0; c < PLAYFIELD_W; c++) {
+        ASSERT(world_get(&g, written + CHUNK_ROWS - 1, c) == 0);
+    }
+}
+
 int main(void) {
     test_smoke();
     test_xorshift32_deterministic();
@@ -238,6 +259,8 @@ int main(void) {
     test_chunk_pick_returns_tier0_when_distance_zero();
     test_chunk_pick_returns_tier_1_or_2_when_distance_high();
     test_chunk_unpack_to_world();
+    test_world_scroll_advances_top();
+    test_world_gen_writes_chunk_with_empty_last_row();
     fprintf(stderr, "\n%d/%d tests passed\n",
             test_count - fail_count, test_count);
     return fail_count ? 1 : 0;

@@ -175,6 +175,19 @@ LOCAL void chunk_unpack(struct game *g, int dest_row, int chunk_idx) {
     }
 }
 
+LOCAL void world_scroll(struct game *g) {
+    g->world_top = (g->world_top + 1) % BUF_H;
+}
+
+LOCAL int world_gen_chunk(struct game *g) {
+    /* Write a fresh chunk into rows [BUF_H - CHUNK_ROWS .. BUF_H - 1]
+     * relative to world_top. Returns dest_row. */
+    int dest_row = BUF_H - CHUNK_ROWS;
+    int pick = chunk_pick(&g->rng, g->distance);
+    chunk_unpack(g, dest_row, pick);
+    return dest_row;
+}
+
 /* --- player --- */
 /* (filled in Task 13) */
 
