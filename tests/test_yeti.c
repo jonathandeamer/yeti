@@ -238,6 +238,38 @@ static void test_world_gen_writes_chunk_with_empty_last_row(void) {
     }
 }
 
+static void test_game_init_with_seed_is_deterministic(void) {
+    struct game a, b;
+    game_init(&a, 42);
+    game_init(&b, 42);
+    ASSERT(a.rng == b.rng);
+    ASSERT(a.yeti_reveal_tick == b.yeti_reveal_tick);
+    ASSERT(a.player_col == b.player_col);
+    ASSERT(a.alive == b.alive);
+}
+
+static void test_game_init_reveal_tick_in_range(void) {
+    struct game g;
+    int min_ticks = REVEAL_MIN_S * (1000 / FRAME_MS);
+    int max_ticks = REVEAL_MAX_S * (1000 / FRAME_MS);
+    for (unsigned int s = 1; s < 50; s++) {
+        game_init(&g, s);
+        ASSERT(g.yeti_reveal_tick >= min_ticks);
+        ASSERT(g.yeti_reveal_tick <  max_ticks);
+    }
+}
+
+static void test_game_init_starting_state(void) {
+    struct game g;
+    game_init(&g, 7);
+    ASSERT(g.tick == 0);
+    ASSERT(g.distance == 0);
+    ASSERT(g.alive == 1);
+    ASSERT(g.yeti_armed == 0);
+    ASSERT(g.player_col == PLAYFIELD_W / 2 - 1);
+    ASSERT(g.scroll_period == SCROLL_PERIOD_START);
+}
+
 int main(void) {
     test_smoke();
     test_xorshift32_deterministic();
@@ -261,6 +293,9 @@ int main(void) {
     test_chunk_unpack_to_world();
     test_world_scroll_advances_top();
     test_world_gen_writes_chunk_with_empty_last_row();
+    test_game_init_with_seed_is_deterministic();
+    test_game_init_reveal_tick_in_range();
+    test_game_init_starting_state();
     fprintf(stderr, "\n%d/%d tests passed\n",
             test_count - fail_count, test_count);
     return fail_count ? 1 : 0;
