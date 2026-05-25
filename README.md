@@ -1,8 +1,10 @@
 # yeti
 
-> yeti - ski down a mountain until the yeti finds you
+> ski down a mountain until the yeti finds you
 
-A short terminal ski game. The yeti is the inevitable end of every run.
+![yeti gameplay](demo/yeti.gif)
+
+You ski down a mountain. Somewhere between 30 and 60 seconds in, a yeti appears and starts closing the distance. You can lean left or right to dodge trees, but every press also costs you a sliver of headstart against the yeti. Either the trees get you or the yeti does.
 
 ## Build
 
@@ -10,7 +12,7 @@ A short terminal ski game. The yeti is the inevitable end of every run.
 make
 ```
 
-Requires a C99 compiler and ncurses. ncurses is detected via `pkg-config` with an `-lncurses` fallback.
+One C file (`src/yeti.c`, about 10 KiB). Needs a C99 compiler and ncurses; `pkg-config` is used to find ncurses if present, with an `-lncurses` fallback.
 
 ## Run
 
@@ -28,8 +30,4 @@ Requires a C99 compiler and ncurses. ncurses is detected via `pkg-config` with a
 
 ## License
 
-Dual-licensed under your choice of MIT or CC0-1.0. See `LICENSES/MIT.txt` and `LICENSES/CC0-1.0.txt`.
-
-## Independent reimplementation
-
-`yeti` is implemented without source contact with any predecessor or sibling ski game. See `FORBIDDEN-SOURCES.md` for the discipline that binds every contributor.
+Dual-licensed: MIT or CC0-1.0, your pick. See `LICENSES/MIT.txt` and `LICENSES/CC0-1.0.txt`.
