@@ -1,5 +1,4 @@
 /* SPDX-License-Identifier: MIT OR CC0-1.0 */
-#define _POSIX_C_SOURCE 200809L
 
 /* --- includes --- */
 #include <ncurses.h>
@@ -86,49 +85,39 @@ LOCAL unsigned int xorshift32(unsigned int *s) {
 }
 
 LOCAL unsigned int xorshift_uniform(unsigned int *s, unsigned int n) {
-    /* Slight modulo bias acceptable for game variance use. */
     return xorshift32(s) % n;
 }
 
 /* --- world --- */
-/* Bit layout: byte B covers cols B*8..B*8+7; bit 7 = leftmost (col B*8). */
 LOCAL const uint8_t chunk_pool[CHUNK_COUNT][CHUNK_ROWS][CHUNK_BYTES] = {
-    /* chunk 0 (tier 0): trees at (0,27), (1,12), (1,45), (2,40) */
     { { 0x00, 0x00, 0x00, 0x10, 0x00, 0x00, 0x00, 0x00 },
       { 0x00, 0x08, 0x00, 0x00, 0x00, 0x04, 0x00, 0x00 },
       { 0x00, 0x00, 0x00, 0x00, 0x00, 0x80, 0x00, 0x00 },
       { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 } },
-    /* chunk 1 (tier 0): (0,7), (0,45), (1,25), (2,18), (2,49) */
     { { 0x01, 0x00, 0x00, 0x00, 0x00, 0x04, 0x00, 0x00 },
       { 0x00, 0x00, 0x00, 0x40, 0x00, 0x00, 0x00, 0x00 },
       { 0x00, 0x00, 0x20, 0x00, 0x00, 0x00, 0x40, 0x00 },
       { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 } },
-    /* chunk 2 (tier 0): (0,18), (1,6), (1,37), (2,26) */
     { { 0x00, 0x00, 0x20, 0x00, 0x00, 0x00, 0x00, 0x00 },
       { 0x02, 0x00, 0x00, 0x00, 0x04, 0x00, 0x00, 0x00 },
       { 0x00, 0x00, 0x00, 0x20, 0x00, 0x00, 0x00, 0x00 },
       { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 } },
-    /* chunk 3 (tier 1): (0,5),(0,19),(0,38) | (1,12),(1,29),(1,46) | (2,8),(2,21),(2,45) */
     { { 0x04, 0x00, 0x10, 0x00, 0x02, 0x00, 0x00, 0x00 },
       { 0x00, 0x08, 0x00, 0x04, 0x00, 0x02, 0x00, 0x00 },
       { 0x00, 0x80, 0x04, 0x00, 0x00, 0x04, 0x00, 0x00 },
       { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 } },
-    /* chunk 4 (tier 1): (0,2),(0,15),(0,36) | (1,8),(1,27),(1,47) | (2,4),(2,18),(2,36) */
     { { 0x20, 0x01, 0x00, 0x00, 0x08, 0x00, 0x00, 0x00 },
       { 0x00, 0x80, 0x00, 0x10, 0x00, 0x01, 0x00, 0x00 },
       { 0x08, 0x00, 0x20, 0x00, 0x08, 0x00, 0x00, 0x00 },
       { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 } },
-    /* chunk 5 (tier 1): (0,7),(0,22),(0,41) | (1,2),(1,20),(1,45) | (2,11),(2,31),(2,48) */
     { { 0x01, 0x00, 0x02, 0x00, 0x00, 0x40, 0x00, 0x00 },
       { 0x20, 0x00, 0x08, 0x00, 0x00, 0x04, 0x00, 0x00 },
       { 0x00, 0x10, 0x00, 0x01, 0x00, 0x00, 0x80, 0x00 },
       { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 } },
-    /* chunk 6 (tier 2): (0,3),(0,10),(0,22),(0,38),(0,50) | (1,6),(1,16),(1,31),(1,46) | (2,1),(2,13),(2,23),(2,41),(2,52) */
     { { 0x10, 0x20, 0x02, 0x00, 0x02, 0x00, 0x20, 0x00 },
       { 0x02, 0x00, 0x80, 0x01, 0x00, 0x02, 0x00, 0x00 },
       { 0x40, 0x04, 0x01, 0x00, 0x00, 0x40, 0x08, 0x00 },
       { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 } },
-    /* chunk 7 (tier 2): (0,6),(0,17),(0,32),(0,45) | (1,3),(1,14),(1,33),(1,49) | (2,10),(2,24),(2,46),(2,59) */
     { { 0x02, 0x00, 0x40, 0x00, 0x80, 0x04, 0x00, 0x00 },
       { 0x10, 0x02, 0x00, 0x00, 0x40, 0x00, 0x40, 0x00 },
       { 0x00, 0x20, 0x00, 0x80, 0x00, 0x02, 0x00, 0x10 },
@@ -152,11 +141,6 @@ LOCAL void world_set(struct game *g, int row, int col, char v) {
 }
 
 LOCAL int chunk_pick(unsigned int *rng, int distance) {
-    /* Density ramp:
-     *   distance <  100  -> tier 0 only
-     *   distance <  200  -> tier 0 or 1 (50/50)
-     *   distance >= 200  -> tier 1 or 2 (50/50)
-     */
     int min_tier, max_tier;
     if (distance < 100)       { min_tier = 0; max_tier = 0; }
     else if (distance < 200)  { min_tier = 0; max_tier = 1; }
@@ -184,8 +168,6 @@ LOCAL void world_scroll(struct game *g) {
 }
 
 LOCAL int world_gen_chunk(struct game *g) {
-    /* Write a fresh chunk into rows [BUF_H - CHUNK_ROWS .. BUF_H - 1]
-     * relative to world_top. Returns dest_row. */
     int dest_row = BUF_H - CHUNK_ROWS;
     int pick = chunk_pick(&g->rng, g->distance);
     chunk_unpack(g, dest_row, pick);
@@ -250,12 +232,12 @@ static void term_cleanup(void) {
 static int term_init(void) {
     const char *term = getenv("TERM");
     if (!term || !*term || !strcmp(term, "dumb")) {
-        fputs("yeti: requires a real terminal (TERM unset or dumb)\n", stderr);
+        fputs("needs a real terminal\n", stderr);
         return 0;
     }
     setenv("ESCDELAY", "25", 0);
     if (!initscr()) {
-        fputs("yeti: initscr failed\n", stderr);
+        fputs("initscr failed\n", stderr);
         return 0;
     }
     curses_initialized = 1;
@@ -275,7 +257,7 @@ static int term_init(void) {
 
     if (LINES < 24 || COLS < 80) {
         term_cleanup();
-        fputs("yeti: requires an 80x24 terminal or larger\n", stderr);
+        fputs("needs 80x24\n", stderr);
         return 0;
     }
 
@@ -309,13 +291,11 @@ LOCAL void game_init(struct game *g, unsigned int seed) {
 }
 
 LOCAL void update_scroll_period(struct game *g) {
-    /* Linear ramp from SCROLL_PERIOD_START to SCROLL_PERIOD_END over 60 s. */
     int ramp_ticks = 60 * (1000 / FRAME_MS);
     int span = SCROLL_PERIOD_START - SCROLL_PERIOD_END;
     int reduced = (g->tick * span) / ramp_ticks;
     if (reduced > span) reduced = span;
     int target = SCROLL_PERIOD_START - reduced;
-    /* Allow the yeti-reveal jolt (which already nudged it lower) to stick. */
     if (target < g->scroll_period) g->scroll_period = target;
 }
 
@@ -344,7 +324,6 @@ LOCAL void step(struct game *g, int input) {
 LOCAL void draw(const struct game *g) {
     erase();
 
-    /* Playfield rows */
     for (int r = 0; r < LINES && r < BUF_H; r++) {
         for (int c = 0; c < PLAYFIELD_W; c++) {
             char cell = world_get(g, r, c);
@@ -356,13 +335,11 @@ LOCAL void draw(const struct game *g) {
         }
     }
 
-    /* Player (two cells) */
     attron(COLOR_PAIR(PAIR_PLAYER) | A_BOLD);
     mvaddch(PLAYER_ROW, PLAYFIELD_X_OFF + g->player_col, '|');
     mvaddch(PLAYER_ROW, PLAYFIELD_X_OFF + g->player_col + 1, '|');
     attroff(COLOR_PAIR(PAIR_PLAYER) | A_BOLD);
 
-    /* Yeti */
     if (g->yeti_armed) {
         int yrow = g->yeti_row_fp / FP_SCALE;
         if (yrow >= 0 && yrow < LINES) {
@@ -372,7 +349,6 @@ LOCAL void draw(const struct game *g) {
         }
     }
 
-    /* HUD */
     attron(COLOR_PAIR(PAIR_HUD) | A_DIM);
     mvprintw(0, COLS - 13, "DIST %5dm", g->distance);
     attroff(COLOR_PAIR(PAIR_HUD) | A_DIM);
@@ -381,7 +357,6 @@ LOCAL void draw(const struct game *g) {
 }
 
 LOCAL int death_screen(const struct game *g) {
-    /* Returns 1 if player wants to restart, 0 to quit. */
     int cx = COLS / 2;
     int cy = LINES / 2;
     attron(COLOR_PAIR(PAIR_PLAYER) | A_BOLD);
@@ -390,8 +365,6 @@ LOCAL int death_screen(const struct game *g) {
     attroff(COLOR_PAIR(PAIR_PLAYER) | A_BOLD);
     refresh();
 
-    /* Short timeout so we wake up to poll sig_quit even if libc/ncurses
-     * auto-restart the underlying read across a signal. */
     timeout(200);
     for (;;) {
         int ch = getch();
@@ -403,11 +376,9 @@ LOCAL int death_screen(const struct game *g) {
 }
 
 LOCAL void play_one_run(struct game *g, int max_ticks) {
-    /* max_ticks = 0 means run until death or quit. */
     struct timespec next;
     clock_gettime(CLOCK_MONOTONIC, &next);
 
-    /* Seed the world with two chunks so something is on screen at start. */
     chunk_unpack(g, BUF_H - CHUNK_ROWS * 2, chunk_pick(&g->rng, 0));
     chunk_unpack(g, BUF_H - CHUNK_ROWS,     chunk_pick(&g->rng, 0));
 
@@ -453,7 +424,7 @@ LOCAL int cli_parse(int argc, char **argv, struct cli_opts *opts) {
         } else if (!strcmp(a, "--ticks") && i + 1 < argc) {
             opts->ticks = (int)strtol(argv[++i], NULL, 10);
         } else {
-            fprintf(stderr, "yeti: unknown argument: %s\n", a);
+            fprintf(stderr, "unknown: %s\n", a);
             return 1;
         }
     }
@@ -496,7 +467,7 @@ int main(int argc, char **argv) {
 
     while (!sig_quit) {
         play_one_run(&g, opts.ticks);
-        if (opts.ticks > 0) break;  /* test mode: one run then exit */
+        if (opts.ticks > 0) break;
         if (sig_quit || g.alive) break;
         if (!death_screen(&g)) break;
         game_init(&g, (unsigned int)(time(NULL) ^ getpid()));
