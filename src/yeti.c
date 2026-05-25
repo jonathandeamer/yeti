@@ -10,13 +10,6 @@
 #include <time.h>
 #include <unistd.h>
 
-/* --- test visibility --- */
-#ifdef GAME_TEST
-#define LOCAL
-#else
-#define LOCAL static
-#endif
-
 /* --- constants --- */
 #define FRAME_MS         33
 #define PLAYFIELD_W      60
@@ -56,7 +49,7 @@ struct game {
 };
 
 /* --- time --- */
-LOCAL void add_ms(struct timespec *t, long ms) {
+static void add_ms(struct timespec *t, long ms) {
     t->tv_sec += ms / 1000;
     t->tv_nsec += (ms % 1000) * 1000000L;
     if (t->tv_nsec >= 1000000000L) {
@@ -65,7 +58,7 @@ LOCAL void add_ms(struct timespec *t, long ms) {
     }
 }
 
-LOCAL int ms_until(struct timespec t) {
+static int ms_until(struct timespec t) {
     struct timespec now;
     clock_gettime(CLOCK_MONOTONIC, &now);
     long sec = t.tv_sec - now.tv_sec;
@@ -74,7 +67,7 @@ LOCAL int ms_until(struct timespec t) {
 }
 
 /* --- prng --- */
-LOCAL unsigned int xorshift32(unsigned int *s) {
+static unsigned int xorshift32(unsigned int *s) {
     unsigned int x = *s;
     x ^= x << 13;
     x ^= x >> 17;
@@ -83,12 +76,12 @@ LOCAL unsigned int xorshift32(unsigned int *s) {
     return x;
 }
 
-LOCAL unsigned int xorshift_uniform(unsigned int *s, unsigned int n) {
+static unsigned int xorshift_uniform(unsigned int *s, unsigned int n) {
     return xorshift32(s) % n;
 }
 
 /* --- world --- */
-LOCAL const char *chunks[CHUNK_COUNT] = {
+static const char *chunks[CHUNK_COUNT] = {
     "27|12,45|40",
     "7,45|25|18,49",
     "18|6,37|26",
@@ -99,23 +92,23 @@ LOCAL const char *chunks[CHUNK_COUNT] = {
     "6,17,32,45|3,14,33,49|10,24,46,59",
 };
 
-LOCAL const uint8_t chunk_tier[CHUNK_COUNT] = { 0, 0, 0, 1, 1, 1, 2, 2 };
+static const uint8_t chunk_tier[CHUNK_COUNT] = { 0, 0, 0, 1, 1, 1, 2, 2 };
 
-LOCAL void world_clear(struct game *g) {
+static void world_clear(struct game *g) {
     memset(g->world, 0, sizeof(g->world));
 }
 
-LOCAL char world_get(const struct game *g, int row, int col) {
+static char world_get(const struct game *g, int row, int col) {
     int idx = (g->world_top + row) % BUF_H;
     return g->world[idx][col];
 }
 
-LOCAL void world_set(struct game *g, int row, int col, char v) {
+static void world_set(struct game *g, int row, int col, char v) {
     int idx = (g->world_top + row) % BUF_H;
     g->world[idx][col] = v;
 }
 
-LOCAL int chunk_pick(unsigned int *rng, int distance) {
+static int chunk_pick(unsigned int *rng, int distance) {
     int min_tier, max_tier;
     if (distance < 100)       { min_tier = 0; max_tier = 0; }
     else if (distance < 200)  { min_tier = 0; max_tier = 1; }
@@ -127,7 +120,7 @@ LOCAL int chunk_pick(unsigned int *rng, int distance) {
     }
 }
 
-LOCAL void chunk_unpack(struct game *g, int dest_row, int chunk_idx) {
+static void chunk_unpack(struct game *g, int dest_row, int chunk_idx) {
     for (int r = 0; r < CHUNK_ROWS; r++) {
         for (int c = 0; c < PLAYFIELD_W; c++) {
             world_set(g, dest_row + r, c, 0);
@@ -155,28 +148,28 @@ LOCAL void chunk_unpack(struct game *g, int dest_row, int chunk_idx) {
     }
 }
 
-LOCAL void world_scroll(struct game *g) {
+static void world_scroll(struct game *g) {
     g->world_top = (g->world_top + 1) % BUF_H;
 }
 
 /* --- player --- */
-LOCAL int player_lean_input(int input) {
+static int player_lean_input(int input) {
     return input == KEY_LEFT || input == KEY_RIGHT;
 }
 
-LOCAL void player_step(struct game *g, int input) {
+static void player_step(struct game *g, int input) {
     if (input == KEY_LEFT && g->player_col > 0) g->player_col--;
     else if (input == KEY_RIGHT && g->player_col < PLAYFIELD_W - 2) g->player_col++;
 }
 
-LOCAL void player_check_collision(struct game *g) {
+static void player_check_collision(struct game *g) {
     char left  = world_get(g, PLAYER_ROW, g->player_col);
     char right = world_get(g, PLAYER_ROW, g->player_col + 1);
     if (left == 'T' || right == 'T') g->alive = 0;
 }
 
 /* --- yeti --- */
-LOCAL void yeti_step(struct game *g, int input) {
+static void yeti_step(struct game *g, int input) {
     if (!g->yeti_armed) {
         if (g->tick >= g->yeti_reveal_tick) {
             g->yeti_armed = 1;
@@ -234,7 +227,7 @@ static int term_init(void) {
 }
 
 /* --- step / draw --- */
-LOCAL void game_init(struct game *g, unsigned int seed) {
+static void game_init(struct game *g, unsigned int seed) {
     memset(g, 0, sizeof(*g));
     g->rng = seed ? seed : 1;
     g->alive = 1;
@@ -249,7 +242,7 @@ LOCAL void game_init(struct game *g, unsigned int seed) {
                         + (int)xorshift_uniform(&g->rng, (unsigned int)range_ticks);
 }
 
-LOCAL void update_scroll_period(struct game *g) {
+static void update_scroll_period(struct game *g) {
     int ramp_ticks = 60 * (1000 / FRAME_MS);
     int span = SCROLL_PERIOD_START - SCROLL_PERIOD_END;
     int reduced = (g->tick * span) / ramp_ticks;
@@ -258,7 +251,7 @@ LOCAL void update_scroll_period(struct game *g) {
     if (target < g->scroll_period) g->scroll_period = target;
 }
 
-LOCAL void step(struct game *g, int input) {
+static void step(struct game *g, int input) {
     if (!g->alive) return;
 
     g->tick++;
@@ -280,7 +273,7 @@ LOCAL void step(struct game *g, int input) {
     player_check_collision(g);
 }
 
-LOCAL void draw(const struct game *g) {
+static void draw(const struct game *g) {
     erase();
 
     for (int r = 0; r < LINES && r < BUF_H; r++) {
@@ -315,7 +308,7 @@ LOCAL void draw(const struct game *g) {
     refresh();
 }
 
-LOCAL int death_screen(const struct game *g) {
+static int death_screen(const struct game *g) {
     int cx = COLS / 2;
     int cy = LINES / 2;
     attron(COLOR_PAIR(PAIR_PLAYER) | A_BOLD);
@@ -334,7 +327,7 @@ LOCAL int death_screen(const struct game *g) {
     }
 }
 
-LOCAL void play_one_run(struct game *g) {
+static void play_one_run(struct game *g) {
     struct timespec next;
     clock_gettime(CLOCK_MONOTONIC, &next);
 
@@ -358,7 +351,6 @@ LOCAL void play_one_run(struct game *g) {
 }
 
 /* --- main --- */
-#ifndef GAME_TEST
 int main(int argc, char **argv) {
     (void)argc;
     (void)argv;
@@ -378,4 +370,3 @@ int main(int argc, char **argv) {
     term_cleanup();
     return 0;
 }
-#endif
