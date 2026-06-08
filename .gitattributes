@@ -5,3 +5,4 @@ CLAUDE.md export-ignore
 FORBIDDEN-SOURCES.md export-ignore
 .gitignore export-ignore
 .gitattributes export-ignore
+.codex/ export-ignore
