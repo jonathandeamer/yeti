@@ -171,6 +171,10 @@ static void player_check_collision(struct game *g) {
     if (left == 'T' || right == 'T') g->alive = 0;
 }
 
+static int playfield_h(void) {
+    return LINES < 24 ? LINES : 24;
+}
+
 /* --- yeti --- */
 static void yeti_step(struct game *g, int input) {
     if (!g->yeti_armed) {
@@ -281,7 +285,7 @@ static void step(struct game *g, int input) {
 static void draw(const struct game *g) {
     erase();
 
-    for (int r = 0; r < LINES && r < 24; r++) {
+    for (int r = 0; r < playfield_h(); r++) {
         for (int c = 0; c < PLAYFIELD_W; c++) {
             char cell = world_get(g, r, c);
             if (cell == 'T') {
@@ -314,8 +318,8 @@ static void draw(const struct game *g) {
 }
 
 static int death_screen(const struct game *g) {
-    int cx = COLS / 2;
-    int cy = LINES / 2;
+    int cx = PLAYFIELD_X_OFF + (PLAYFIELD_W / 2);
+    int cy = playfield_h() / 2;
     attron(COLOR_PAIR(PAIR_PLAYER) | A_BOLD);
     mvprintw(cy - 1, cx - 8, "YOU SKIED %5dm", g->distance);
     mvprintw(cy + 1, cx - 16, "PRESS R TO RESTART  -  Q TO QUIT");
