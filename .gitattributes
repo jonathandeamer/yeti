@@ -1,0 +1,7 @@
+# Exclude developer documentation and media from release archives
+docs/ export-ignore
+demo/ export-ignore
+CLAUDE.md export-ignore
+FORBIDDEN-SOURCES.md export-ignore
+.gitignore export-ignore
+.gitattributes export-ignore
