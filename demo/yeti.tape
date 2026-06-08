@@ -22,7 +22,7 @@ Hide
 Type "clear && ./yeti"
 Enter
 Show
-Wait+Screen /DISTANCE/
+Wait+Screen /DIST/
 Sleep 700 ms
 
 Right@90 ms 8

@@ -14,7 +14,7 @@
 /* --- constants --- */
 #define FRAME_MS         33
 #define PLAYFIELD_W      60
-#define PLAYFIELD_X_OFF  10
+#define PLAYFIELD_X_OFF  5
 #define PLAYER_ROW       7
 #define BUF_H            32
 #define FP_SCALE         256
@@ -105,8 +105,10 @@ static char world_get(const struct game *g, int row, int col) {
 }
 
 static void world_set(struct game *g, int row, int col, char v) {
-    int idx = (g->world_top + row) % BUF_H;
-    g->world[idx][col] = v;
+    if (col >= 0 && col < PLAYFIELD_W) {
+        int idx = (g->world_top + row) % BUF_H;
+        g->world[idx][col] = v;
+    }
 }
 
 static int chunk_pick(unsigned int *rng, int distance) {
@@ -277,7 +279,7 @@ static void step(struct game *g, int input) {
 static void draw(const struct game *g) {
     erase();
 
-    for (int r = 0; r < LINES && r < BUF_H; r++) {
+    for (int r = 0; r < LINES && r < 24; r++) {
         for (int c = 0; c < PLAYFIELD_W; c++) {
             char cell = world_get(g, r, c);
             if (cell == 'T') {
@@ -303,7 +305,7 @@ static void draw(const struct game *g) {
     }
 
     attron(COLOR_PAIR(PAIR_HUD));
-    mvprintw(0, COLS - 17, "DISTANCE %5dm", g->distance);
+    mvprintw(0, COLS - 13, "DIST %5dm", g->distance);
     attroff(COLOR_PAIR(PAIR_HUD));
 
     refresh();
@@ -365,7 +367,7 @@ int main(int argc, char **argv) {
         play_one_run(&g);
         if (sig_quit || g.alive) break;
         if (!death_screen(&g)) break;
-        game_init(&g, (unsigned int)(time(NULL) ^ getpid()));
+        game_init(&g, (unsigned int)(time(NULL) ^ getpid() ^ g.rng));
     }
 
     term_cleanup();
