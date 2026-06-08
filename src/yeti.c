@@ -224,8 +224,10 @@ static int term_init(void) {
         return 0;
     }
 
-    signal(SIGINT,  on_signal);
-    signal(SIGTERM, on_signal);
+    struct sigaction sa = { .sa_handler = on_signal };
+    sigemptyset(&sa.sa_mask);
+    sigaction(SIGINT,  &sa, NULL);
+    sigaction(SIGTERM, &sa, NULL);
     return 1;
 }
 
