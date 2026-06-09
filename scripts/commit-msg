@@ -1,0 +1,55 @@
+#!/usr/bin/env bash
+# commit-msg hook for yeti: enforces Conventional Commits with required scope.
+# Format: type(scope): description
+# Scopes are tuned to yeti's system breakdown (yeti-design.md §87).
+
+COMMIT_MSG_FILE="$1"
+COMMIT_MSG=$(cat "$COMMIT_MSG_FILE")
+
+# ── Allowed types ────────────────────────────────────────────────────────────
+TYPES="feat|fix|perf|refactor|style|test|docs|build|chore|ci"
+
+# ── Allowed scopes (yeti's subsystems) ───────────────────────────────────────
+# game    – main loop, state struct, input dispatch, frame pacing
+# world   – obstacle/terrain generation, reachability checks
+# yeti    – yeti reveal, chase movement, death tableau
+# render  – glyphs, colors, HUD, title/death/help screens
+# term    – curses init/cleanup, signals, ESCDELAY, KEY_RESIZE
+# score   – XDG persistence, atomic write
+# cli     – argv parsing, -h/-s/-n flags
+# build   – Makefile, compiler/linker flags, pkg-config
+# docs    – README, manpage, design docs, AUTHORS
+# ci      – CI workflow, lint/format configs
+# meta    – LICENSE, .gitignore, SPDX headers, repo root files
+SCOPES="game|world|yeti|render|term|score|cli|build|docs|ci|meta"
+
+# ── Regex ────────────────────────────────────────────────────────────────────
+# Allows optional '!' for breaking changes: feat(yeti)!: ...
+PATTERN="^($TYPES)\(($SCOPES)\)!?: .{1,}"
+
+# Skip merge commits
+if echo "$COMMIT_MSG" | grep -qE "^Merge "; then
+  exit 0
+fi
+
+# Skip fixup/squash commits (used during interactive rebase)
+if echo "$COMMIT_MSG" | grep -qE "^(fixup|squash)! "; then
+  exit 0
+fi
+
+if ! echo "$COMMIT_MSG" | grep -qE "$PATTERN"; then
+  echo ""
+  echo "  x  Commit message does not follow Conventional Commits with scope."
+  echo ""
+  echo "  Format:  type(scope): short description"
+  echo "  Example: feat(yeti): spawn red Y at top-center on reveal"
+  echo ""
+  echo "  Allowed types:  feat fix perf refactor style test docs build chore ci"
+  echo "  Allowed scopes: game world yeti render term score cli build docs ci meta"
+  echo ""
+  echo "  Your message: \"$COMMIT_MSG\""
+  echo ""
+  exit 1
+fi
+
+exit 0

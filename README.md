@@ -35,6 +35,14 @@ make uninstall
 
 Or just `yeti` if installed in your path.
 
+## Development
+
+This repository enforces Conventional Commits via a Git hook. To set up the hook locally, run:
+
+```sh
+make init-hooks
+```
+
 ## Controls
 
 | Key | Action |

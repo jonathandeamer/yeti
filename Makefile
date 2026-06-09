@@ -34,4 +34,9 @@ uninstall:
 size:
 	@wc -c $(SRC)
 
-.PHONY: all clean install uninstall size
+init-hooks:
+	install -d .git/hooks
+	ln -sf ../../scripts/commit-msg .git/hooks/commit-msg
+	chmod +x .git/hooks/commit-msg
+
+.PHONY: all clean install uninstall size init-hooks
