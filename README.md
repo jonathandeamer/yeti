@@ -13,7 +13,7 @@ make
 sudo make install
 ```
 
-One C file (`src/yeti.c`, about 10 KiB). Needs a C99 compiler and ncurses; `pkg-config` is used to find ncurses if present, with an `-lncurses` fallback.
+One C file (`src/yeti.c`). To keep things minimalist, the file is strictly capped at a self-imposed (and completely arbitrary) 10 KiB budget, so contributions will need to fit within the ceiling. Needs a C99 compiler and ncurses; `pkg-config` is used to find ncurses if present, with an `-lncurses` fallback.
 
 By default, the binary is installed to `/usr/local/bin` (which requires administrator privileges via `sudo`). To install without `sudo` to a custom location (like your home directory), customize the `PREFIX` and `DESTDIR` variables:
 
@@ -53,4 +53,4 @@ make init-hooks
 
 ## License
 
-Dual-licensed: MIT or CC0-1.0, your pick. See `LICENSES/MIT.txt` and `LICENSES/CC0-1.0.txt`.
+Dual-licensed: MIT or CC0-1.0, your pick. See [LICENSE-MIT](file:///Users/jonathan/yeti/LICENSE-MIT) and [LICENSE-CC0](file:///Users/jonathan/yeti/LICENSE-CC0).
