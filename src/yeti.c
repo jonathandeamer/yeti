@@ -314,8 +314,8 @@ static void draw(const struct game *g) {
 }
 
 static int death_screen(const struct game *g) {
-    int cx = COLS / 2;
-    int cy = LINES / 2;
+    int cx = PLAYFIELD_X_OFF + PLAYFIELD_W / 2;
+    int cy = 24 / 2;
     attron(COLOR_PAIR(PAIR_PLAYER) | A_BOLD);
     mvprintw(cy - 1, cx - 8, "YOU SKIED %5dm", g->distance);
     mvprintw(cy + 1, cx - 16, "PRESS R TO RESTART  -  Q TO QUIT");
